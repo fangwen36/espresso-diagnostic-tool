@@ -839,15 +839,15 @@ function t(key) {
                     <div class="panel-title" data-i18n="param.title">设定实际萃取参数</div>
                     <div style="display:flex; flex-direction:column; gap:8px;">
                         <div class="slider-group">
-                            <label data-i18n="param.dose">咖啡粉量 (Dose)<span class="value-badge" id="dose-val">16.5 g</span></label>
+                            <label><span data-i18n="param.dose">咖啡粉量 (Dose)</span><span class="value-badge" id="dose-val">16.5 g</span></label>
                             <input type="range" id="param-dose" min="12" max="22" step="0.5" value="16.5" oninput="handlePhysicsParamChange()">
                         </div>
                         <div class="slider-group">
-                            <label data-i18n="param.yield">杯中最终萃取液重 (Yield)<span class="value-badge" id="yield-val">40.0 g</span></label>
+                            <label><span data-i18n="param.yield">杯中最终萃取液重 (Yield)</span><span class="value-badge" id="yield-val">40.0 g</span></label>
                             <input type="range" id="param-yield" min="20" max="50" step="1" value="40" oninput="handlePhysicsParamChange()">
                         </div>
                         <div class="slider-group">
-                            <label data-i18n="param.time">总萃取时长<span class="value-badge" id="time-limit-val">Auto (自动推算)</span></label>
+                            <label><span data-i18n="param.time">总萃取时长</span><span class="value-badge" id="time-limit-val">Auto (自动推算)</span></label>
                             <input type="range" id="param-time-limit" min="14" max="45" step="1" value="14" oninput="handleManualTimeLimitChange()">
                         </div>
                     </div>

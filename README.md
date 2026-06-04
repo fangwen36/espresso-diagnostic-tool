@@ -20,7 +20,7 @@
 直接打开 `coffee_sim.html` 即可运行，无需任何服务器或依赖：
 
 ```bash
-open coffee_sim.html
+open index.html
 ```
 
 1. **步骤 ① — 状态输入**：选择咖啡机类型和粉碗，调节粉量/液重/时长参数，用手绘曲线或感官选择题描述萃取特征
@@ -64,7 +64,7 @@ $$F(t) = \frac{P(t)}{R(t)}$$
 
 ```
 咖啡萃取demo/
-├── coffee_sim.html       # 主应用（单 HTML 文件，包含全部样式和逻辑）
+├── index.html            # 主应用（单 HTML 文件，包含全部样式和逻辑）
 ├── TODO.md               # 开发任务跟踪与迭代历史
 ├── README.md             # 本文件
 ├── .gitignore            # Git 忽略规则

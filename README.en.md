@@ -20,7 +20,7 @@ A pure front-end espresso extraction physics simulation and diagnostic tool. Inp
 Open `coffee_sim.html` in any browser — no server or dependencies required:
 
 ```bash
-open coffee_sim.html
+open index.html
 ```
 
 1. **Step ① — Input**: Select machine and basket type, adjust dose/yield/time parameters, then draw a pressure curve or describe sensory observations
@@ -64,7 +64,7 @@ Resistance $R(t)$ evolves through three factors:
 
 ```
 espresso-diagnostic-tool/
-├── coffee_sim.html       # Main application (single HTML file with all styles and logic)
+├── index.html            # Main application (single HTML file with all styles and logic)
 ├── TODO.md               # Development task tracking & iteration history
 ├── README.md             # Chinese documentation
 ├── README.en.md          # English documentation (this file)

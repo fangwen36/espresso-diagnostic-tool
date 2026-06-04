@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-i18n="app.title">Espresso 萃取物理诊断仪</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0a09;
+            --panel-bg: rgba(24, 21, 19, 0.92);
+            --card-bg: rgba(32, 28, 25, 0.6);
+            --text-main: #f5f5f7;
+            --text-muted: #9a9691;
+            --primary: #c5a880;
+            --primary-hover: #e5c9a3;
+            --primary-dim: rgba(197, 168, 128, 0.12);
+            --accent-red: #e74c3c;
+            --accent-blue: #3498db;
+            --accent-green: #2ecc71;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-primary: rgba(197, 168, 128, 0.16);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 20px;
+            --touch-min: 48px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at 50% -20%, #302219 0%, #0b0a09 85%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 12px;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--panel-bg);
+            padding: 20px 16px;
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-primary);
+            box-shadow: 0 25px 75px rgba(0,0,0,0.6);
+        }
+        @media (min-width: 768px) { body { padding: 24px; } .container { padding: 32px 28px; } }
+        @media (min-width: 1024px) { body { padding: 36px; } .container { padding: 40px 36px; } }
+
+        /* Header */
+        /* Language Switcher */
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 28px;
+            line-height: 1;
+        }
+        .lang-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .lang-btn.active { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            margin: 0 0 16px 0;
+        }
+        @media (min-width: 768px) { h1 { font-size: 28px; } .subtitle { font-size: 13px; margin-bottom: 20px; } }
+
+        /* ===== Tab Bar ===== */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.25);
+            border-radius: var(--radius);
+            padding: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: calc(var(--radius) - 4px);
+            cursor: pointer;
+            transition: all 0.25s;
+            text-align: center;
+            min-height: var(--touch-min);
+        }
+        .tab-btn.active {
+            background: var(--primary-dim);
+            color: var(--primary);
+            box-shadow: 0 0 15px rgba(197,168,128,0.08);
+        }
+        @media (min-width: 768px) { .tab-btn { font-size: 14px; padding: 12px 16px; } }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ===== Split Layout (50/50) ===== */
+        .split-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .split-layout {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+            }
+        }
+
+        .split-panel {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        @media (min-width: 768px) { .split-panel { padding: 20px; gap: 18px; } }
+
+        .panel-title {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 0 6px 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+        @media (min-width: 768px) { .panel-title { font-size: 14px; } }
+
+        /* ===== Choice Cards ===== */
+        .choice-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .choice-group.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        @media (max-width: 374px) { .choice-group, .choice-group.cols-3 { grid-template-columns: 1fr; } }
+
+        .choice-card {
+            background: rgba(18, 16, 14, 0.9);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: var(--touch-min);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .choice-card .card-title { font-size: 12px; font-weight: 600; color: var(--text-main); }
+        .choice-card .card-desc { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+        .choice-card.selected {
+            border-color: var(--primary);
+            background: var(--primary-dim);
+            box-shadow: 0 0 12px rgba(197,168,128,0.12);
+        }
+        .choice-card.selected .card-title { color: var(--primary); }
+        .choice-card:active { transform: scale(0.97); }
+        @media (min-width: 768px) { .choice-card { padding: 12px 10px; } .choice-card .card-title { font-size: 13px; } .choice-card .card-desc { font-size: 10.5px; } }
+
+        /* ===== Sub Input Mode Tabs (画线 / 感官) ===== */
+        .sub-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .sub-tab-btn {
+            padding: 10px 8px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.02);
+            border: 1.5px solid var(--border);
+            color: var(--text-muted);
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .sub-tab-btn.active { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); }
+        @media (min-width: 768px) { .sub-tab-btn { font-size: 12px; padding: 10px 12px; } }
+
+        /* ===== Draw Canvas (Tab 1) ===== */
+        .draw-area {
+            background: rgba(15,13,11,0.75);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px;
+            position: relative;
+        }
+        .draw-area canvas {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 350 / 200;
+            display: block;
+            cursor: crosshair;
+        }
+        .preset-btn {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .preset-btn:hover { background: rgba(197,168,128,0.1); border-color: var(--primary); color: var(--primary); }
+
+        /* Coord Tooltip */
+        .coord-tip {
+            position: absolute;
+            bottom: 6px;
+            left: 10px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(197,168,128,0.2);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            pointer-events: none;
+            display: none;
+            z-index: 5;
+        }
+        .draw-tip-time { color: #e8cfa6; margin-right: 4px; }
+        .draw-tip-bar { color: var(--accent-red); }
+
+        /* Drawing indicator */
+        .draw-indicator {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: rgba(231,76,60,0.15);
+            border: 1px solid rgba(231,76,60,0.3);
+            color: var(--accent-red);
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            animation: pulse 1.8s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        /* ===== Sliders ===== */
+        .slider-group { display: flex; flex-direction: column; gap: 4px; }
+        .slider-group label {
+            font-weight: 500; color: var(--text-main); font-size: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .value-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600; color: var(--primary);
+            background: rgba(197,168,128,0.12);
+            padding: 2px 7px; border-radius: 4px; font-size: 11px;
+            border: 1px solid rgba(197,168,128,0.2);
+        }
+        input[type="range"] {
+            width: 100%; -webkit-appearance: none; appearance: none;
+            height: 4px; border-radius: 2px; background: #23201e;
+            outline: none; margin: 4px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--primary); cursor: pointer;
+            border: 2px solid var(--bg); box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+
+        /* ===== Action Button ===== */
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #c5a880 0%, #a2855e 100%);
+            color: #100f0d;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(197,168,128,0.25);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-height: var(--touch-min);
+        }
+        .action-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #dfc29b, #c5a880);
+            box-shadow: 0 6px 25px rgba(197,168,128,0.4);
+            transform: translateY(-1px);
+        }
+        .action-btn:active:not(:disabled) { transform: translateY(1px); }
+        .action-btn:disabled { background: #252220; color: #55524f; cursor: not-allowed; box-shadow: none; }
+
+        /* ===== Tab 2: Stat Cards ===== */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .stat-card {
+            background: rgba(15,13,11,0.65);
+            border: 1px solid var(--border);
+            padding: 8px 6px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        .stat-card .label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .stat-card .value { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+        .stat-card .value.p-col { color: var(--accent-red); }
+        .stat-card .value.f-col { color: var(--accent-blue); }
+        .stat-card .value.y-col { color: var(--primary); }
+        .stat-card .value.t-col { color: #e8cfa6; }
+
+        /* ===== Tab 2: Charts ===== */
+        .result-charts { display: flex; flex-direction: column; gap: 10px; }
+        .result-chart-box {
+            background: rgba(15,13,11,0.75);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            position: relative;
+        }
+        .result-chart-box canvas {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 350 / 165;
+            display: block;
+        }
+
+        /* ===== Tab 2: Right Panel ===== */
+        .flavor-bar {
+            height: 36px;
+            display: flex;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #100f0d;
+        }
+        .flavor-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+            transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            padding: 0 4px;
+        }
+        .acid { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .sweet { background: linear-gradient(135deg, #27ae60, #219653); }
+        .bitter { background: linear-gradient(135deg, #7f8c8d, #57606f); }
+
+        /* Diagnostic Card */
+        .diag-card {
+            background: rgba(24,21,19,0.98);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-primary);
+            padding: 16px;
+            word-wrap: break-word;
+        }
+        .diag-card.alert { border-color: rgba(231,76,60,0.4); background: rgba(231,76,60,0.04); }
+        .diag-card.alert .diag-title { color: var(--accent-red); }
+        .diag-card.success { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.04); }
+        .diag-card.success .diag-title { color: var(--accent-green); }
+        .diag-title { font-size: 13px; font-weight: 600; margin: 0 0 8px 0; color: var(--primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .diag-text { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 0; word-wrap: break-word; }
+
+        /* Action buttons in Tab 2 right */
+        .action-group { display: flex; flex-direction: column; gap: 8px; }
+        .restart-btn {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: var(--touch-min);
+        }
+        .restart-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .help-btn {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: 1.5px solid var(--border);
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 40px;
+        }
+        .help-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
+        .btn-row { display: flex; gap: 8px; }
+
+        /* Help Panel */
+        .help-panel { display: none; flex-direction: column; gap: 10px; }
+        .help-panel.visible { display: flex; }
+        .help-card {
+            background: rgba(15,13,11,0.75);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+        }
+        .help-card h4 { font-size: 12px; font-weight: 600; color: var(--accent-blue); margin: 0 0 6px 0; }
+        .help-card p { font-size: 11px; color: var(--text-muted); line-height: 1.6; margin: 0 0 4px 0; }
+        .help-card .formula { font-family: 'JetBrains Mono', monospace; color: var(--accent-blue); display: block; padding: 4px 0; text-align: center; font-size: 12px; }
+        .help-card table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 10.5px; }
+        .help-card td, .help-card th { border: 1px solid rgba(255,255,255,0.06); padding: 4px 6px; text-align: left; }
+        .help-card th { color: var(--primary); background: rgba(197,168,128,0.05); font-weight: 600; }
+
+        /* Debug textarea hidden, copy still works */
+        #debug-output-text { display: none; }
+    </style>
+<script>
+// ============================================
+// Internationalization (i18n) — 中英双语
+// ============================================
+const i18n = { zh: {}, en: {} };
+
+i18n.zh = {
+  'app.title': 'Espresso 萃取物理诊断仪',
+  'app.subtitle': '活塞拉杆机与电泵机 · 多模态物理诊断',
+  'tab.input': '① 状态输入',
+  'tab.diagnosis': '② 诊断建议',
+  'machine.title': '您正在使用哪种咖啡机？',
+  'machine.lever': '🔧 活塞拉杆机',
+  'machine.lever_desc': '手动拉拉杆加压萃取',
+  'machine.pump': '⚡ 电泵咖啡机',
+  'machine.pump_desc': '按按钮一键自动加压',
+  'basket.title': '您在使用哪种粉碗？',
+  'basket.standard': '🥄 传统粉碗',
+  'basket.standard_desc': '细孔密布<br>需要 8~10 bar',
+  'basket.fast': '🚀 快速高流粉碗',
+  'basket.fast_desc': '粗孔多孔<br>2~6 bar 低压高流',
+  'basket.pressurized': '🔒 增压粉碗',
+  'basket.pressurized_desc': '单孔加压<br>适合预磨粉/新手',
+  'param.title': '设定实际萃取参数',
+  'param.dose': '咖啡粉量 (Dose)',
+  'param.yield': '杯中最终萃取液重 (Yield)',
+  'param.time': '总萃取时长',
+  'param.time_auto': 'Auto (自动推算)',
+  'input.title': '您想如何描述遇到的问题？',
+  'input.draw': '📈 手画压力曲线',
+  'input.sensory': '☕ 感官描述',
+  'draw.preset_golden': '🔄 恢复默认完美曲线',
+  'draw.indicator': '可拖拽画线',
+  'draw.hint': '* 初始显示为理想曲线，可直接在图表上拖拽修改',
+  'sensory.crema': '1. 咖啡流出时的油脂泡沫',
+  'sensory.crema_thin_bubbles': '🫧 泡沫很稀',
+  'sensory.crema_thin_bubbles_desc': '大泡泡消散很快',
+  'sensory.crema_thick_crema': '☕ 油脂厚实绵密',
+  'sensory.crema_thick_crema_desc': '深棕色带虎斑纹',
+  'sensory.crema_no_crema': '💧 几乎没有油脂',
+  'sensory.crema_no_crema_desc': '像褐色水一样',
+  'sensory.crema_dark_spot': '⚫ 油脂少带焦斑',
+  'sensory.crema_dark_spot_desc': '深黑色焦斑圈',
+  'sensory.color': '2. 咖啡液体颜色的变化',
+  'sensory.color_early_blonding': '🟡 很快发白',
+  'sensory.color_early_blonding_desc': '极快变成淡黄水状',
+  'sensory.color_gradual_color': '🟠 缓慢渐变',
+  'sensory.color_gradual_color_desc': '深红褐→金黄→浅黄',
+  'sensory.color_constant_dark': '⚫ 全程深黑',
+  'sensory.color_constant_dark_desc': '始终没有变淡',
+  'sensory.flow': '3. 咖啡流出来的水流状态',
+  'sensory.flow_gushing': '💦 喷涌出来',
+  'sensory.flow_gushing_desc': '像开水龙头流速极快',
+  'sensory.flow_channel_spurts': '🌊 乱飙喷水',
+  'sensory.flow_channel_spurts_desc': '水流开叉乱射',
+  'sensory.flow_dripping': '💧 滴滴答答',
+  'sensory.flow_dripping_desc': '极难出液滴落状',
+  'sensory.flow_mouse_tails': '🐀 优雅细流',
+  'sensory.flow_mouse_tails_desc': '两股细流汇成一线',
+  'sensory.taste': '4. 喝起来的第一口味道',
+  'sensory.taste_very_sour_salty': '🍋 酸得倒牙',
+  'sensory.taste_very_sour_salty_desc': '柠檬般酸带轻微咸',
+  'sensory.taste_ashy_bitter': '🔥 焦糊燥苦',
+  'sensory.taste_ashy_bitter_desc': '烟灰般干硬烧喉咙',
+  'sensory.taste_watery_dull': '💧 寡淡如水',
+  'sensory.taste_watery_dull_desc': '没味道又酸又苦',
+  'sensory.taste_balanced_sweet': '✨ 醇厚甘甜',
+  'sensory.taste_balanced_sweet_desc': '平衡好喝回甘持久',
+  'btn.analyze': '➡️ 开始分析',
+  'stat.time': '萃取时长',
+  'stat.pressure': '当前压力',
+  'stat.flow': '实时流速',
+  'stat.yield': '杯中液量',
+  'flavor.title': '杯中风味占比',
+  'flavor.acid': '酸',
+  'flavor.sweet': '甜',
+  'flavor.bitter': '苦',
+  'diag.title': '⚙️ 物理诊断书',
+  'diag.default': '请先在"① 状态输入"中描述萃取特征并点击"开始分析"。',
+  'action.restart': '🔄 重新诊断',
+  'action.help': 'ℹ️ 了解工作原理',
+  'action.copy_debug': '📋 复制调试数据',
+  'action.copied': '✅ 已成功复制到剪贴板！',
+  'help.darcy_title': '📐 流速测算原理（达西定律）',
+  'help.darcy_text': '本诊断仪底层的流体物理引擎基于多孔介质流体力学的<strong>达西定律</strong>建立：',
+  'help.darcy_formula': 'F(t) = P(t) / R(t) (g/s)',
+  'help.darcy_desc': '<strong>F(t)</strong> = 实时流速 · <strong>P(t)</strong> = 实时压力差 (bar) · <strong>R(t)</strong> = 粉饼实时流阻',
+  'help.darcy_detail': '<strong>流阻 R(t) 的动态演变受控于：</strong><br>1. <strong>基准阻力：</strong> 研磨细度和粉量决定。<br>2. <strong>物理通道崩塌：</strong> 当压力超过粉床剪切击穿上限时，粉床撕裂穿孔。<br>3. <strong>溶解性冲刷衰减：</strong> 可溶物随萃取进行减少，流阻自然递减。',
+  'help.basket_title': '🥄 粉碗类型对萃取的物理影响',
+  'help.basket_header_type': '粉碗类型',
+  'help.basket_header_hole': '孔径/孔数',
+  'help.basket_header_pressure': '典型工作压力',
+  'help.basket_header_range': '诊断判定区间',
+  'help.basket_standard': '🥄 传统粉碗',
+  'help.basket_standard_hole': '0.3mm / ~250孔',
+  'help.basket_standard_range': '<6.5=偏低 >10.5=偏高',
+  'help.basket_fast': '🚀 快速高流粉碗',
+  'help.basket_fast_hole': '0.4~0.5mm / ~500孔',
+  'help.basket_fast_range': '<2=偏低 >6.5=偏高',
+  'help.basket_pressurized': '🔒 增压粉碗',
+  'help.basket_pressurized_hole': '单孔',
+  'help.basket_pressurized_range': '<6=偏低 >12=偏高',
+  'help.diag_logic_title': '🔍 诊断判定逻辑',
+  'help.diag_logic_text': '系统根据手绘压力曲线（或感官选择题映射的拟合曲线），结合粉量、液重、粉碗类型和机器类型，通过达西定律反推实时流速曲线，再基于压力峰值、流速变化趋势、通道崩溃检测等指标，自动匹配对应的物理故障类型。',
+  'help.diag_logic_list': '<strong>判定规则：</strong><br>压力过低 + 流速过高 → 粗研磨/低粉量<br>压力过高 + 流速过低 → 细研磨/憋压<br>压力中段骤跌 + 流速暴增 → 通道效应<br>压力峰值在粉碗对应区间 + 流速平稳 → 正常萃取',
+  'diag.lever_collapse_title': '❌ 低粉量抗剪失效与顶空过度真空瓦解',
+  'diag.lever_collapse_text1': '物理特征：最高压力在',
+  'diag.lever_collapse_text2': 'bar 锁定见顶，随后骤降，流速喷涌（最高',
+  'diag.lever_collapse_text3': 'g/s）。<br><br><strong>💡 纠错处方：</strong><br>1. 将粉量增加至 18.0g - 19.5g。<br>2. 抬起拉杆注水时需极其缓慢平稳。<br>3. 建议将研磨度调细 2 - 3 格。',
+  'diag.choked_title': '❌ 研磨度过细憋压',
+  'diag.choked_text': '物理特征：压力量级为',
+  'diag.choked_text2': 'bar，全程流速低垂在',
+  'diag.choked_text3': 'g/s 以下。<br><br><strong>💡 纠错建议：</strong> 将磨豆机调粗 2 - 4 格，适当降低 0.5g 粉量。',
+  'diag.channel_title': '⚠️ 粉床通道击穿偏流',
+  'diag.channel_text': '物理特征：加压中段发生偏流喷射，出液早期发白。<br><br><strong>💡 纠错建议：</strong> 必须保证压粉水平，引入 WDT 布粉针扫散结块。',
+  'diag.low_pressure_title': '⚠️ 萃取压力偏低（相对所选粉碗）',
+  'diag.low_pressure_text': '物理特征：最高压力仅',
+  'diag.low_pressure_text2': 'bar，低于所选',
+  'diag.low_pressure_text3': '的典型区间 (',
+  'diag.low_pressure_text4': 'bar)。<br><br>',
+  'diag.low_pressure_fast1': '当前 ',
+  'diag.low_pressure_fast2': ' bar 在快速粉碗上已接近正常下限。可以尝试：<br>',
+  'diag.low_pressure_fast3': '1. 磨细 1 格提高粉饼阻力。<br>2. 检查预浸阶段是否充分建压。<br>3. 如果喝起来平衡，这个压力也可以接受。',
+  'diag.low_pressure_other1': '当前 ',
+  'diag.low_pressure_other2': ' bar 远低于',
+  'diag.low_pressure_other3': ' 的正常区间。请尝试：<br>',
+  'diag.low_pressure_other4': '1. <strong>磨细 2 - 3 格</strong>增加粉饼阻力。<br>2. 检查粉量是否足够（当前 ',
+  'diag.low_pressure_other5': 'g）。<br>3. 确认预浸效果是否充分。',
+  'diag.high_pressure_title': '⚠️ 萃取压力偏高（相对所选粉碗）',
+  'diag.high_pressure_text': '物理特征：最高压力 ',
+  'diag.high_pressure_text2': ' bar，超过所选粉碗典型区间。<br><br>建议将研磨调粗 1 - 2 格，或适当减少 0.5g 粉量。',
+  'diag.success_title': '✅ 出色的',
+  'diag.success_title2': '萃取曲线',
+  'diag.success_text': '物理特征分析：最大压力稳健推进至 <strong>',
+  'diag.success_text2': ' bar</strong>，符合所选粉碗的预期区间。<br><br>',
+  'diag.success_text3': '* 极佳的手法与粉床密实度！预浸润成功促使粉饼锁水膨胀，中段最大程度析出了高甘甜的糖类大分子，尾段自然降压避免了灰尾杂苦溶出。请继续保持该配置！',
+  'diag.pump_coarse_title': '❌ 研磨偏粗流失',
+  'diag.pump_coarse_text': '物理特征：最高压力仅',
+  'diag.pump_coarse_text2': 'bar，流速喷涌。<br><br>建议将磨豆机调细 3 - 5 格。',
+  'diag.pump_choked_title': '❌ 憋压阻塞',
+  'diag.pump_choked_text': '物理特征：压力达到极限，滴滴答答无法成流。建议将研磨调粗 2 - 3 格。',
+  'diag.pump_success_title': '✅ 标准恒压萃取正常',
+  'diag.pump_success_text': '物理特征：水泵成功稳在 9 bar，流速 1.5 g/s 稳定通过。风味析出正常。',
+  'diag.waiting_title': '⚙️ 物理诊断书',
+  'diag.waiting_text': '请先在"① 状态输入"中描述萃取特征并点击"开始分析"。',
+  'canvas.waiting': '等待数据...',
+  'chart.pressure_title': '重现压力曲线 (bar)',
+  'chart.pressure_actual': '实际测得压力曲线 (bar)',
+  'chart.flow_title': '重现流速曲线 (g/s)',
+  'basket.standard_label': '传统粉碗',
+  'basket.fast_label': '快速粉碗低压高流',
+  'basket.pressurized_label': '增压粉碗',
+};
+
+i18n.en = {
+  'app.title': 'Espresso Extraction Diagnostic Tool',
+  'app.subtitle': 'Lever & Pump Machines · Multi-modal Physical Diagnosis',
+  'tab.input': '① Input',
+  'tab.diagnosis': '② Diagnosis',
+  'machine.title': 'Which espresso machine are you using?',
+  'machine.lever': '🔧 Lever Machine',
+  'machine.lever_desc': 'Manual lever pressurization',
+  'machine.pump': '⚡ Pump Machine',
+  'machine.pump_desc': 'One-button automatic pressure',
+  'basket.title': 'Which basket are you using?',
+  'basket.standard': '🥄 Standard Basket',
+  'basket.standard_desc': 'Fine holes<br>Requires 8~10 bar',
+  'basket.fast': '🚀 High-Flow Basket',
+  'basket.fast_desc': 'Wide holes<br>2~6 bar low-pressure high-flow',
+  'basket.pressurized': '🔒 Pressurized Basket',
+  'basket.pressurized_desc': 'Single hole<br>Great for pre-ground / beginners',
+  'param.title': 'Set Extraction Parameters',
+  'param.dose': 'Coffee Dose',
+  'param.yield': 'Final Yield',
+  'param.time': 'Extraction Time',
+  'param.time_auto': 'Auto',
+  'input.title': 'How would you like to describe the issue?',
+  'input.draw': '📈 Draw Pressure Curve',
+  'input.sensory': '☕ Sensory Description',
+  'draw.preset_golden': '🔄 Reset to Golden Curve',
+  'draw.indicator': 'Drag to draw',
+  'draw.hint': '* The ideal curve is shown by default. Drag on the chart to modify.',
+  'sensory.crema': '1. Crema appearance during extraction',
+  'sensory.crema_thin_bubbles': '🫧 Thin Bubbles',
+  'sensory.crema_thin_bubbles_desc': 'Large bubbles that dissipate quickly',
+  'sensory.crema_thick_crema': '☕ Thick Crema',
+  'sensory.crema_thick_crema_desc': 'Dark brown with tiger stripes',
+  'sensory.crema_no_crema': '💧 Almost No Crema',
+  'sensory.crema_no_crema_desc': 'Like brown water',
+  'sensory.crema_dark_spot': '⚫ Dark Spots',
+  'sensory.crema_dark_spot_desc': 'Dark burnt spots on crema',
+  'sensory.color': '2. Coffee color change during flow',
+  'sensory.color_early_blonding': '🟡 Early Blonding',
+  'sensory.color_early_blonding_desc': 'Quickly turns pale yellow',
+  'sensory.color_gradual_color': '🟠 Gradual Change',
+  'sensory.color_gradual_color_desc': 'Dark red-brown → golden → pale',
+  'sensory.color_constant_dark': '⚫ Constantly Dark',
+  'sensory.color_constant_dark_desc': 'Never lightens',
+  'sensory.flow': '3. Flow pattern from the basket',
+  'sensory.flow_gushing': '💦 Gushing',
+  'sensory.flow_gushing_desc': 'Rushes out like a faucet',
+  'sensory.flow_channel_spurts': '🌊 Channel Spurts',
+  'sensory.flow_channel_spurts_desc': 'Squirting and spraying',
+  'sensory.flow_dripping': '💧 Dripping',
+  'sensory.flow_dripping_desc': 'Extremely slow, drip by drip',
+  'sensory.flow_mouse_tails': '🐀 Mouse Tails',
+  'sensory.flow_mouse_tails_desc': 'Two fine streams merging as one',
+  'sensory.taste': '4. First taste of the espresso',
+  'sensory.taste_very_sour_salty': '🍋 Very Sour',
+  'sensory.taste_very_sour_salty_desc': 'Lemon-like sour with slight salt',
+  'sensory.taste_ashy_bitter': '🔥 Ashy & Bitter',
+  'sensory.taste_ashy_bitter_desc': 'Dry, harsh, burning throat',
+  'sensory.taste_watery_dull': '💧 Watery & Dull',
+  'sensory.taste_watery_dull_desc': 'Flat, sour and bitter with no body',
+  'sensory.taste_balanced_sweet': '✨ Balanced & Sweet',
+  'sensory.taste_balanced_sweet_desc': 'Well-balanced with lasting sweetness',
+  'btn.analyze': '➡️ Start Analysis',
+  'stat.time': 'Time',
+  'stat.pressure': 'Pressure',
+  'stat.flow': 'Flow Rate',
+  'stat.yield': 'Yield',
+  'flavor.title': 'Flavor Profile',
+  'flavor.acid': 'Acid',
+  'flavor.sweet': 'Sweet',
+  'flavor.bitter': 'Bitter',
+  'diag.title': '⚙️ Physical Diagnosis',
+  'diag.default': 'Go to "① Input" tab, describe your extraction, and click "Start Analysis".',
+  'action.restart': '🔄 Rediagnose',
+  'action.help': 'ℹ️ How It Works',
+  'action.copy_debug': '📋 Copy Debug Data',
+  'action.copied': '✅ Copied to clipboard!',
+  'help.darcy_title': '📐 Flow Physics (Darcy\'s Law)',
+  'help.darcy_text': 'The physics engine is based on <strong>Darcy\'s Law</strong> for flow through porous media:',
+  'help.darcy_formula': 'F(t) = P(t) / R(t) (g/s)',
+  'help.darcy_desc': '<strong>F(t)</strong> = Flow rate · <strong>P(t)</strong> = Pressure (bar) · <strong>R(t)</strong> = Puck resistance',
+  'help.darcy_detail': '<strong>R(t) resistance evolves through:</strong><br>1. <strong>Base resistance:</strong> Determined by grind size and dose.<br>2. <strong>Channel collapse:</strong> When pressure exceeds shear strength, the puck tears.<br>3. <strong>Solubility erosion:</strong> Resistance naturally decreases as solubles are extracted.',
+  'help.basket_title': '🥄 Basket Type & Physical Impact',
+  'help.basket_header_type': 'Basket Type',
+  'help.basket_header_hole': 'Hole Size/Count',
+  'help.basket_header_pressure': 'Typical Pressure',
+  'help.basket_header_range': 'Diagnosis Range',
+  'help.basket_standard': '🥄 Standard',
+  'help.basket_standard_hole': '0.3mm / ~250 holes',
+  'help.basket_standard_range': '<6.5=low >10.5=high',
+  'help.basket_fast': '🚀 High-Flow',
+  'help.basket_fast_hole': '0.4~0.5mm / ~500 holes',
+  'help.basket_fast_range': '<2=low >6.5=high',
+  'help.basket_pressurized': '🔒 Pressurized',
+  'help.basket_pressurized_hole': 'Single hole',
+  'help.basket_pressurized_range': '<6=low >12=high',
+  'help.diag_logic_title': '🔍 Diagnosis Logic',
+  'help.diag_logic_text': 'The system matches your drawn pressure curve (or sensory-mapped curve) against physical failure modes using Darcy\'s law, pressure peaks, flow trends, and channel detection.',
+  'help.diag_logic_list': '<strong>Rules:</strong><br>Low pressure + High flow → Coarse grind / low dose<br>High pressure + Low flow → Fine grind / choke<br>Mid-drop pressure + Flow spike → Channeling<br>Stable pressure in basket range → Normal extraction',
+  'diag.lever_collapse_title': '❌ Low Dose Shear Failure & Void Collapse',
+  'diag.lever_collapse_text1': 'Peak pressure locked at ',
+  'diag.lever_collapse_text2': ' bar then dropped sharply. Flow gushed at up to ',
+  'diag.lever_collapse_text3': ' g/s.<br><br><strong>💡 Fix:</strong><br>1. Increase dose to 18.0g - 19.5g.<br>2. Raise the lever very slowly during pre-infusion.<br>3. Grind 2-3 steps finer.',
+  'diag.choked_title': '❌ Grind Too Fine (Choked)',
+  'diag.choked_text': 'Pressure peaked at ',
+  'diag.choked_text2': ' bar with flow rate below ',
+  'diag.choked_text3': ' g/s throughout.<br><br><strong>💡 Fix:</strong> Grind 2-4 steps coarser, reduce dose by 0.5g.',
+  'diag.channel_title': '⚠️ Puck Channeling',
+  'diag.channel_text': 'Mid-extraction channeling detected with early blonding.<br><br><strong>💡 Fix:</strong> Level your tamp, use WDT to break up clumps.',
+  'diag.low_pressure_title': '⚠️ Low Pressure (for selected basket)',
+  'diag.low_pressure_text': 'Peak pressure only ',
+  'diag.low_pressure_text2': ' bar, below the ',
+  'diag.low_pressure_text3': ' typical range (',
+  'diag.low_pressure_text4': ' bar).<br><br>',
+  'diag.low_pressure_fast1': 'At ',
+  'diag.low_pressure_fast2': ' bar, this is near the lower bound for a high-flow basket.<br>',
+  'diag.low_pressure_fast3': '1. Grind 1 step finer.<br>2. Check pre-infusion pressure build-up.<br>3. If it tastes balanced, this pressure is acceptable.',
+  'diag.low_pressure_other1': 'At ',
+  'diag.low_pressure_other2': ' bar, this is well below the ',
+  'diag.low_pressure_other3': ' normal range.<br>',
+  'diag.low_pressure_other4': '1. <strong>Grind 2-3 steps finer</strong>.<br>2. Check dose (currently ',
+  'diag.low_pressure_other5': 'g).<br>3. Ensure adequate pre-infusion.',
+  'diag.high_pressure_title': '⚠️ High Pressure (for selected basket)',
+  'diag.high_pressure_text': 'Peak pressure ',
+  'diag.high_pressure_text2': ' bar exceeds the basket\'s typical range.<br><br>Grind 1-2 steps coarser or reduce dose by 0.5g.',
+  'diag.success_title': '✅ Excellent ',
+  'diag.success_title2': ' Extraction',
+  'diag.success_text': 'Pressure peaked at <strong>',
+  'diag.success_text2': ' bar</strong>, within the expected range for this basket.<br><br>',
+  'diag.success_text3': '* Great puck prep! Pre-infusion successfully saturated the puck, mid-phase extracted maximum sweetness, and the natural pressure decline avoided bitter tail notes. Keep this recipe!',
+  'diag.pump_coarse_title': '❌ Grind Too Coarse',
+  'diag.pump_coarse_text': 'Peak pressure only ',
+  'diag.pump_coarse_text2': ' bar, flow gushing.<br><br>Grind 3-5 steps finer.',
+  'diag.pump_choked_title': '❌ Choked Extraction',
+  'diag.pump_choked_text': 'Pressure maxed out, barely any flow. Grind 2-3 steps coarser.',
+  'diag.pump_success_title': '✅ Standard Pump Extraction',
+  'diag.pump_success_text': 'Pump held stable at 9 bar, flow at 1.5 g/s. Normal extraction.',
+  'diag.waiting_title': '⚙️ Physical Diagnosis',
+  'diag.waiting_text': 'Go to "① Input" tab, describe your extraction, and click "Start Analysis".',
+  'chart.pressure_title': 'Replay Pressure (bar)',
+  'chart.pressure_actual': 'Actual Pressure (bar)',
+  'chart.flow_title': 'Replay Flow (g/s)',
+  'canvas.waiting': 'Waiting for data...',
+  'basket.standard_label': 'Standard Basket',
+  'basket.fast_label': 'High-Flow Basket',
+  'basket.pressurized_label': 'Pressurized Basket',
+};
+
+let currentLang = localStorage.getItem('espresso_lang') || 'zh';
+
+function t(key) {
+  return (i18n[currentLang] && i18n[currentLang][key]) || (i18n['zh'] && i18n['zh'][key]) || key;
+}
+</script>
+</head>
+<body>
+<div class="container">
+    <div class="header-row">
+        <h1 data-i18n="app.title">Espresso 萃取物理诊断仪</h1>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button class="lang-btn active" data-lang="zh" onclick="switchLang('zh')">中文</button>
+            <button class="lang-btn" data-lang="en" onclick="switchLang('en')">EN</button>
+        </div>
+    </div>
+    <p class="subtitle" data-i18n="app.subtitle">活塞拉杆机与电泵机 · 多模态物理诊断</p>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <button class="tab-btn active" id="tab-btn-input" onclick="switchTab('input')" data-i18n="tab.input">① 状态输入</button>
+        <button class="tab-btn" id="tab-btn-diagnosis" onclick="switchTab('diagnosis')" data-i18n="tab.diagnosis">② 诊断建议</button>
+    </div>
+
+    <!-- ====== Tab 1: 状态输入 ====== -->
+    <div class="tab-content active" id="tab-input-content">
+        <div class="split-layout">
+            <!-- Left Panel: 设备 + 粉碗 + 参数 -->
+            <div class="split-panel" style="gap:18px;">
+                <div>
+                    <div class="panel-title" data-i18n="machine.title">您正在使用哪种咖啡机？</div>
+                    <div class="choice-group" data-choice-group="device">
+                        <div class="choice-card selected" data-value="lever" onclick="selectChoice(this,'device')">
+                            <span class="card-title" data-i18n="machine.lever">🔧 活塞拉杆机</span>
+                            <span class="card-desc" data-i18n="machine.lever_desc">手动拉拉杆加压萃取</span>
+                        </div>
+                        <div class="choice-card" data-value="pump" onclick="selectChoice(this,'device')">
+                            <span class="card-title" data-i18n="machine.pump">⚡ 电泵咖啡机</span>
+                            <span class="card-desc" data-i18n="machine.pump_desc">按按钮一键自动加压</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel-title" data-i18n="basket.title">您在使用哪种粉碗？</div>
+                    <div class="choice-group cols-3" data-choice-group="basket">
+                        <div class="choice-card selected" data-value="standard" onclick="selectChoice(this,'basket')">
+                            <span class="card-title" data-i18n="basket.standard">🥄 传统粉碗</span>
+                            <span class="card-desc" data-i18n="basket.standard_desc">细孔密布<br>需要 8~10 bar</span>
+                        </div>
+                        <div class="choice-card" data-value="fast" onclick="selectChoice(this,'basket')">
+                            <span class="card-title" data-i18n="basket.fast">🚀 快速高流粉碗</span>
+                            <span class="card-desc" data-i18n="basket.fast_desc">粗孔多孔<br>2~6 bar 低压高流</span>
+                        </div>
+                        <div class="choice-card" data-value="pressurized" onclick="selectChoice(this,'basket')">
+                            <span class="card-title" data-i18n="basket.pressurized">🔒 增压粉碗</span>
+                            <span class="card-desc" data-i18n="basket.pressurized_desc">单孔加压<br>适合预磨粉/新手</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel-title" data-i18n="param.title">设定实际萃取参数</div>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div class="slider-group">
+                            <label data-i18n="param.dose">咖啡粉量 (Dose)<span class="value-badge" id="dose-val">16.5 g</span></label>
+                            <input type="range" id="param-dose" min="12" max="22" step="0.5" value="16.5" oninput="handlePhysicsParamChange()">
+                        </div>
+                        <div class="slider-group">
+                            <label data-i18n="param.yield">杯中最终萃取液重 (Yield)<span class="value-badge" id="yield-val">40.0 g</span></label>
+                            <input type="range" id="param-yield" min="20" max="50" step="1" value="40" oninput="handlePhysicsParamChange()">
+                        </div>
+                        <div class="slider-group">
+                            <label data-i18n="param.time">总萃取时长<span class="value-badge" id="time-limit-val">Auto (自动推算)</span></label>
+                            <input type="range" id="param-time-limit" min="14" max="45" step="1" value="14" oninput="handleManualTimeLimitChange()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: 描述问题（画线 / 感官）+ 开始分析 -->
+            <div class="split-panel" style="gap:12px;">
+                <div>
+                    <div class="panel-title" data-i18n="input.title">您想如何描述遇到的问题？</div>
+                    <div class="sub-tabs">
+                        <button class="sub-tab-btn active" id="sub-tab-draw" onclick="switchSubInput('draw')" data-i18n="input.draw">📈 手画压力曲线</button>
+                        <button class="sub-tab-btn" id="sub-tab-sensory" onclick="switchSubInput('sensory')" data-i18n="input.sensory">☕ 感官描述</button>
+                    </div>
+                </div>
+
+                <!-- Draw Sub-mode -->
+                <div id="sub-draw" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; gap:6px;">
+                        <button class="preset-btn" onclick="loadPresetCurve('golden')" style="flex:1;" data-i18n="draw.preset_golden">🔄 恢复默认完美曲线</button>
+                    </div>
+                    <div class="draw-area" style="position:relative;">
+                        <canvas id="pressureChart" width="350" height="200"></canvas>
+                        <div class="draw-indicator" id="draw-indicator">
+                            <span style="display:inline-block; width:5px; height:5px; background:var(--accent-red); border-radius:50%;"></span>
+                            <span data-i18n="draw.indicator">可拖拽画线</span>
+                        </div>
+                        <div class="coord-tip" id="coord-tip">
+                            <span class="draw-tip-time" id="coord-time">0.0s</span>
+                            <span class="draw-tip-bar" id="coord-bar">0.0 bar</span>
+                        </div>
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); text-align:center;" data-i18n="draw.hint">* 初始显示为理想曲线，可直接在图表上拖拽修改</div>
+                </div>
+
+                <!-- Sensory Sub-mode -->
+                <div id="sub-sensory" style="display:none; flex-direction:column; gap:12px;">
+                    <div>
+                        <div class="panel-title" style="font-size:12px; border:none; padding:0; margin:0 0 4px 0;" data-i18n="sensory.crema">1. 咖啡流出时的油脂泡沫</div>
+                        <div class="choice-group" data-choice-group="sensory-crema">
+                            <div class="choice-card selected" data-value="thin_bubbles" onclick="selectChoice(this,'sensory-crema')">
+                                <span class="card-title" data-i18n="sensory.crema_thin_bubbles">🫧 泡沫很稀</span><span class="card-desc" data-i18n="sensory.crema_thin_bubbles_desc">大泡泡消散很快</span>
+                            </div>
+                            <div class="choice-card" data-value="thick_crema" onclick="selectChoice(this,'sensory-crema')">
+                                <span class="card-title" data-i18n="sensory.crema_thick_crema">☕ 油脂厚实绵密</span><span class="card-desc" data-i18n="sensory.crema_thick_crema_desc">深棕色带虎斑纹</span>
+                            </div>
+                            <div class="choice-card" data-value="no_crema" onclick="selectChoice(this,'sensory-crema')">
+                                <span class="card-title" data-i18n="sensory.crema_no_crema">💧 几乎没有油脂</span><span class="card-desc" data-i18n="sensory.crema_no_crema_desc">像褐色水一样</span>
+                            </div>
+                            <div class="choice-card" data-value="dark_spot" onclick="selectChoice(this,'sensory-crema')">
+                                <span class="card-title" data-i18n="sensory.crema_dark_spot">⚫ 油脂少带焦斑</span><span class="card-desc" data-i18n="sensory.crema_dark_spot_desc">深黑色焦斑圈</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="panel-title" style="font-size:12px; border:none; padding:0; margin:0 0 4px 0;" data-i18n="sensory.color">2. 咖啡液体颜色的变化</div>
+                        <div class="choice-group" data-choice-group="sensory-color">
+                            <div class="choice-card selected" data-value="early_blonding" onclick="selectChoice(this,'sensory-color')">
+                                <span class="card-title" data-i18n="sensory.color_early_blonding">🟡 很快发白</span><span class="card-desc" data-i18n="sensory.color_early_blonding_desc">极快变成淡黄水状</span>
+                            </div>
+                            <div class="choice-card" data-value="gradual_color" onclick="selectChoice(this,'sensory-color')">
+                                <span class="card-title" data-i18n="sensory.color_gradual_color">🟠 缓慢渐变</span><span class="card-desc" data-i18n="sensory.color_gradual_color_desc">深红褐→金黄→浅黄</span>
+                            </div>
+                            <div class="choice-card" data-value="constant_dark" onclick="selectChoice(this,'sensory-color')">
+                                <span class="card-title" data-i18n="sensory.color_constant_dark">⚫ 全程深黑</span><span class="card-desc" data-i18n="sensory.color_constant_dark_desc">始终没有变淡</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="panel-title" style="font-size:12px; border:none; padding:0; margin:0 0 4px 0;" data-i18n="sensory.flow">3. 咖啡流出来的水流状态</div>
+                        <div class="choice-group" data-choice-group="sensory-flow">
+                            <div class="choice-card selected" data-value="gushing" onclick="selectChoice(this,'sensory-flow')">
+                                <span class="card-title" data-i18n="sensory.flow_gushing">💦 喷涌出来</span><span class="card-desc" data-i18n="sensory.flow_gushing_desc">像开水龙头流速极快</span>
+                            </div>
+                            <div class="choice-card" data-value="channel_spurts" onclick="selectChoice(this,'sensory-flow')">
+                                <span class="card-title" data-i18n="sensory.flow_channel_spurts">🌊 乱飙喷水</span><span class="card-desc" data-i18n="sensory.flow_channel_spurts_desc">水流开叉乱射</span>
+                            </div>
+                            <div class="choice-card" data-value="dripping" onclick="selectChoice(this,'sensory-flow')">
+                                <span class="card-title" data-i18n="sensory.flow_dripping">💧 滴滴答答</span><span class="card-desc" data-i18n="sensory.flow_dripping_desc">极难出液滴落状</span>
+                            </div>
+                            <div class="choice-card" data-value="mouse_tails" onclick="selectChoice(this,'sensory-flow')">
+                                <span class="card-title" data-i18n="sensory.flow_mouse_tails">🐀 优雅细流</span><span class="card-desc" data-i18n="sensory.flow_mouse_tails_desc">两股细流汇成一线</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="panel-title" style="font-size:12px; border:none; padding:0; margin:0 0 4px 0;" data-i18n="sensory.taste">4. 喝起来的第一口味道</div>
+                        <div class="choice-group" data-choice-group="sensory-taste">
+                            <div class="choice-card selected" data-value="very_sour_salty" onclick="selectChoice(this,'sensory-taste')">
+                                <span class="card-title" data-i18n="sensory.taste_very_sour_salty">🍋 酸得倒牙</span><span class="card-desc" data-i18n="sensory.taste_very_sour_salty_desc">柠檬般酸带轻微咸</span>
+                            </div>
+                            <div class="choice-card" data-value="ashy_bitter" onclick="selectChoice(this,'sensory-taste')">
+                                <span class="card-title" data-i18n="sensory.taste_ashy_bitter">🔥 焦糊燥苦</span><span class="card-desc" data-i18n="sensory.taste_ashy_bitter_desc">烟灰般干硬烧喉咙</span>
+                            </div>
+                            <div class="choice-card" data-value="watery_dull" onclick="selectChoice(this,'sensory-taste')">
+                                <span class="card-title" data-i18n="sensory.taste_watery_dull">💧 寡淡如水</span><span class="card-desc" data-i18n="sensory.taste_watery_dull_desc">没味道又酸又苦</span>
+                            </div>
+                            <div class="choice-card" data-value="balanced_sweet" onclick="selectChoice(this,'sensory-taste')">
+                                <span class="card-title" data-i18n="sensory.taste_balanced_sweet">✨ 醇厚甘甜</span><span class="card-desc" data-i18n="sensory.taste_balanced_sweet_desc">平衡好喝回甘持久</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="action-btn" id="btn-start-analysis" onclick="startAnalysis()" data-i18n="btn.analyze">➡️ 开始分析</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== Tab 2: 诊断建议 ====== -->
+    <div class="tab-content" id="tab-diagnosis-content">
+        <div class="split-layout">
+            <!-- Left Panel: 数据 + 图表 -->
+            <div class="split-panel" style="gap:10px;">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="label" data-i18n-statlbl="stat.time">萃取时长</div>
+                        <div class="value t-col" id="stat-time">0.0s</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label" data-i18n-statlbl="stat.pressure">当前压力</div>
+                        <div class="value p-col" id="stat-pressure">0.0 bar</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label" data-i18n-statlbl="stat.flow">实时流速</div>
+                        <div class="value f-col" id="stat-flow">0.0 g/s</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label" data-i18n-statlbl="stat.yield">杯中液量</div>
+                        <div class="value y-col" id="stat-yield">0.0 g</div>
+                    </div>
+                </div>
+
+                <div class="result-charts">
+                    <div class="result-chart-box">
+                        <canvas id="resultPChart" width="350" height="165"></canvas>
+                    </div>
+                    <div class="result-chart-box">
+                        <canvas id="resultFChart" width="350" height="165"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: 风味占比 + 诊断书 + 操作 -->
+            <div class="split-panel" style="gap:14px;">
+                <div>
+                    <div class="panel-title" data-i18n="flavor.title">杯中风味占比</div>
+                    <div class="flavor-bar">
+                        <div id="block-acid" class="flavor-block acid" style="width:33.3%">酸 (0%)</div>
+                        <div id="block-sweet" class="flavor-block sweet" style="width:33.3%">甜 (0%)</div>
+                        <div id="block-bitter" class="flavor-block bitter" style="width:33.3%">苦 (0%)</div>
+                    </div>
+                </div>
+
+                <div class="diag-card" id="diag-card">
+                    <h4 class="diag-title" id="diag-title">⚙️ 物理诊断书</h4>
+                    <p class="diag-text" id="diag-text" data-i18n="diag.default">请先在"① 状态输入"中描述萃取特征并点击"开始分析"。</p>
+                </div>
+
+                <div class="action-group">
+                    <button class="restart-btn" onclick="restartAnalysis()" data-i18n="action.restart">🔄 重新诊断</button>
+                    <div class="btn-row">
+                        <button class="help-btn" onclick="toggleHelp()" data-i18n="action.help">ℹ️ 了解工作原理</button>
+                        <button class="help-btn" onclick="copyDebugData()" data-i18n="action.copy_debug">📋 复制调试数据</button>
+                    </div>
+                </div>
+
+                <!-- Help Panel (hidden by default) -->
+                <div class="help-panel" id="help-panel">
+                    <div class="help-card">
+                        <h4 data-i18n="help.darcy_title">📐 流速测算原理（达西定律）</h4>
+                        <p data-i18n="help.darcy_text">本诊断仪底层的流体物理引擎基于多孔介质流体力学的<strong>达西定律</strong>建立：</p>
+                        <span class="formula" data-i18n="help.darcy_formula">F(t) = P(t) / R(t) (g/s)</span>
+                        <p data-i18n="help.darcy_desc"><strong>F(t)</strong> = 实时流速 · <strong>P(t)</strong> = 实时压力差 (bar) · <strong>R(t)</strong> = 粉饼实时流阻</p>
+                        <p data-i18n="help.darcy_detail"><strong>流阻 R(t) 的动态演变受控于：</strong><br>
+                        1. <strong>基准阻力：</strong> 研磨细度和粉量决定。<br>
+                        2. <strong>物理通道崩塌：</strong> 当压力超过粉床剪切击穿上限时，粉床撕裂穿孔。<br>
+                        3. <strong>溶解性冲刷衰减：</strong> 可溶物随萃取进行减少，流阻自然递减。</p>
+                    </div>
+                    <div class="help-card">
+                        <h4 data-i18n="help.basket_title">🥄 粉碗类型对萃取的物理影响</h4>
+                        <table><tr><th data-i18n="help.basket_header_type">粉碗类型</th><th data-i18n="help.basket_header_hole">孔径/孔数</th><th data-i18n="help.basket_header_pressure">典型工作压力</th><th data-i18n="help.basket_header_range">诊断判定区间</th></tr>
+                        <tr><td data-i18n="help.basket_standard">🥄 传统粉碗</td><td data-i18n="help.basket_standard_hole">0.3mm / ~250孔</td><td>8~10 bar</td><td data-i18n="help.basket_standard_range">&lt;6.5=偏低 &gt;10.5=偏高</td></tr>
+                        <tr><td data-i18n="help.basket_fast">🚀 快速高流粉碗</td><td data-i18n="help.basket_fast_hole">0.4~0.5mm / ~500孔</td><td>2~6 bar</td><td data-i18n="help.basket_fast_range">&lt;2=偏低 &gt;6.5=偏高</td></tr>
+                        <tr><td data-i18n="help.basket_pressurized">🔒 增压粉碗</td><td data-i18n="help.basket_pressurized_hole">单孔</td><td>6~12 bar</td><td data-i18n="help.basket_pressurized_range">&lt;6=偏低 &gt;12=偏高</td></tr>
+                        </table>
+                    </div>
+                    <div class="help-card">
+                        <h4 data-i18n="help.diag_logic_title">🔍 诊断判定逻辑</h4>
+                        <p data-i18n="help.diag_logic_text">系统根据手绘压力曲线（或感官选择题映射的拟合曲线），结合粉量、液重、粉碗类型和机器类型，通过达西定律反推实时流速曲线，再基于压力峰值、流速变化趋势、通道崩溃检测等指标，自动匹配对应的物理故障类型。</p>
+                        <p data-i18n="help.diag_logic_list"><strong>判定规则：</strong><br>
+                        压力过低 + 流速过高 → 粗研磨/低粉量<br>
+                        压力过高 + 流速过低 → 细研磨/憋压<br>
+                        压力中段骤跌 + 流速暴增 → 通道效应<br>
+                        压力峰值在粉碗对应区间 + 流速平稳 → 正常萃取</p>
+                    </div>
+                </div>
+
+                <!-- Hidden debug textarea -->
+                <textarea id="debug-output-text" readonly></textarea>
+                <div id="debug-copy-toast" style="display:none; font-size:10px; color:var(--accent-green); text-align:center; font-weight:600;" data-i18n="action.copied">已成功复制到剪贴板！</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // Global State
+    // ============================================
+    let selectedDevice = 'lever';
+    let selectedBasket = 'standard';
+    let sensoryCrema = 'thin_bubbles';
+    let sensoryColor = 'early_blonding';
+    let sensoryFlow = 'gushing';
+    let sensoryTaste = 'very_sour_salty';
+
+    let currentSubInput = 'draw';
+    let currentMaxTime = 32;
+    const steps = 91;
+    let drawnPressureData = [];
+    function resetDrawnData() {
+        drawnPressureData = [];
+        for (let i = 0; i < steps; i++) drawnPressureData.push(0);
+    }
+    resetDrawnData();
+
+    let helpVisible = false;
+
+    // ============================================
+    // Tab Switching
+    // ============================================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        if (tab === 'input') {
+            document.getElementById('tab-btn-input').classList.add('active');
+            document.getElementById('tab-input-content').classList.add('active');
+        } else {
+            document.getElementById('tab-btn-diagnosis').classList.add('active');
+            document.getElementById('tab-diagnosis-content').classList.add('active');
+        }
+    }
+
+    // ============================================
+    // Choice Cards
+    // ============================================
+    function selectChoice(cardEl, groupName) {
+        const group = cardEl.parentElement;
+        group.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
+        cardEl.classList.add('selected');
+        const val = cardEl.dataset.value;
+        switch(groupName) {
+            case 'device': selectedDevice = val; handleDeviceChange(); break;
+            case 'basket': selectedBasket = val; if (currentSubInput === 'draw') loadPresetCurve('golden'); break;
+            case 'sensory-crema': sensoryCrema = val; break;
+            case 'sensory-color': sensoryColor = val; break;
+            case 'sensory-flow': sensoryFlow = val; break;
+            case 'sensory-taste': sensoryTaste = val; break;
+        }
+    }
+
+    // ============================================
+    // Sub Input Switching (Draw / Sensory)
+    // ============================================
+    function switchSubInput(mode) {
+        currentSubInput = mode;
+        document.getElementById('sub-tab-draw').className = 'sub-tab-btn' + (mode==='draw'?' active':'');
+        document.getElementById('sub-tab-sensory').className = 'sub-tab-btn' + (mode==='sensory'?' active':'');
+        document.getElementById('sub-draw').style.display = mode === 'draw' ? 'flex' : 'none';
+        document.getElementById('sub-sensory').style.display = mode === 'sensory' ? 'flex' : 'none';
+        if (mode === 'draw') {
+            document.getElementById('draw-indicator').style.display = 'flex';
+            document.getElementById('coord-tip').style.display = 'block';
+            loadPresetCurve('golden');
+        } else {
+            document.getElementById('draw-indicator').style.display = 'none';
+            document.getElementById('coord-tip').style.display = 'none';
+            resetDrawnData();
+            initResultCharts();
+        }
+    }
+
+    // ============================================
+    // Device Change Handler
+    // ============================================
+    function handleDeviceChange() {
+        if (currentSubInput === 'draw') loadPresetCurve('golden');
+    }
+
+    // ============================================
+    // Param / Time Handlers
+    // ============================================
+    function updateMaxTime() {
+        const timeVal = parseInt(document.getElementById('param-time-limit').value);
+        if (timeVal === 14) {
+            const dose = parseFloat(document.getElementById('param-dose').value);
+            const yieldVal = parseFloat(document.getElementById('param-yield').value);
+            currentMaxTime = Math.round(8.0 + (yieldVal - 2.0) / 1.4);
+        } else {
+            currentMaxTime = timeVal;
+        }
+    }
+
+    function handlePhysicsParamChange() {
+        document.getElementById('dose-val').innerText = parseFloat(document.getElementById('param-dose').value).toFixed(1) + " g";
+        document.getElementById('yield-val').innerText = parseFloat(document.getElementById('param-yield').value).toFixed(1) + " g";
+        if (currentSubInput === 'draw') { updateMaxTime(); renderDrawnCurve(); }
+    }
+
+    function handleManualTimeLimitChange() {
+        const val = parseInt(document.getElementById('param-time-limit').value);
+        document.getElementById('time-limit-val').innerText = val === 14 ? t('param.time_auto') : val + "s";
+        if (currentSubInput === 'draw') { updateMaxTime(); renderDrawnCurve(); }
+    }
+
+    // ============================================
+    // Canvas Drawing (Tab 1)
+    // ============================================
+    const pCanvas = document.getElementById('pressureChart');
+    let isDrawing = false;
+    let lastDrawnIndex = null;
+
+    function handleDrawEvent(e) {
+        if (currentSubInput !== 'draw') return;
+        const rect = pCanvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        if (!clientX || !clientY) return;
+        const scaleX = pCanvas.width / rect.width;
+        const scaleY = pCanvas.height / rect.height;
+        const canvasX = (clientX - rect.left) * scaleX;
+        const canvasY = (clientY - rect.top) * scaleY;
+        const paddingLeft = 45, paddingRight = 20, paddingTop = 32, paddingBottom = 24;
+        const chartWidth = 350 - paddingLeft - paddingRight;
+        const chartHeight = 200 - paddingTop - paddingBottom;
+        const xZero = paddingLeft, yZero = 200 - paddingBottom;
+
+        if (canvasX >= xZero && canvasX <= 350 - paddingRight) {
+            let t = ((canvasX - xZero) / chartWidth) * currentMaxTime;
+            t = Math.max(0, Math.min(currentMaxTime, t));
+            let p = ((yZero - canvasY) / chartHeight) * 10;
+            p = Math.max(0, Math.min(10, p));
+            let index = Math.round((t / currentMaxTime) * (steps - 1));
+            if (index >= 0 && index < steps) {
+                drawnPressureData[index] = p;
+                if (lastDrawnIndex === null) {
+                    for (let i = 0; i < index; i++) drawnPressureData[i] = p * (i / (index || 1));
+                }
+                interpolateMissing(index);
+                for (let i = index + 1; i < steps; i++) drawnPressureData[i] = p;
+                renderDrawnCurve();
+            }
+        }
+    }
+
+    function interpolateMissing(currIndex) {
+        if (lastDrawnIndex !== null && Math.abs(currIndex - lastDrawnIndex) > 1) {
+            let start = Math.min(lastDrawnIndex, currIndex);
+            let end = Math.max(lastDrawnIndex, currIndex);
+            let sv = drawnPressureData[start], ev = drawnPressureData[end];
+            for (let i = start + 1; i < end; i++)
+                drawnPressureData[i] = sv + (ev - sv) * (i - start) / (end - start);
+        }
+        lastDrawnIndex = currIndex;
+    }
+
+    pCanvas.addEventListener('mousedown', (e) => {
+        if (currentSubInput !== 'draw') return;
+        isDrawing = true; lastDrawnIndex = null;
+        handleDrawEvent(e);
+    });
+    pCanvas.addEventListener('mousemove', (e) => { if (isDrawing) handleDrawEvent(e); });
+    window.addEventListener('mouseup', () => { isDrawing = false; lastDrawnIndex = null; });
+    pCanvas.addEventListener('touchstart', (e) => {
+        if (currentSubInput !== 'draw') return;
+        isDrawing = true; lastDrawnIndex = null;
+        handleDrawEvent(e); e.preventDefault();
+    });
+    pCanvas.addEventListener('touchmove', (e) => { if (isDrawing) { handleDrawEvent(e); e.preventDefault(); } });
+    pCanvas.addEventListener('touchend', () => { isDrawing = false; lastDrawnIndex = null; });
+
+    // Coord tooltip for drawing
+    const coordTip = document.getElementById('coord-tip');
+    const coordTime = document.getElementById('coord-time');
+    const coordBar = document.getElementById('coord-bar');
+    pCanvas.addEventListener('mousemove', (e) => {
+        if (currentSubInput !== 'draw') return;
+        const rect = pCanvas.getBoundingClientRect();
+        const scaleX = pCanvas.width / rect.width;
+        const scaleY = pCanvas.height / rect.height;
+        const canvasX = (e.clientX - rect.left) * scaleX;
+        const canvasY = (e.clientY - rect.top) * scaleY;
+        const xZero = 45, chartWidth = 350 - 45 - 20;
+        const yZero = 200 - 24, chartHeight = 200 - 32 - 24;
+        if (canvasX >= xZero && canvasX <= 330) {
+            const t = ((canvasX - xZero) / chartWidth) * currentMaxTime;
+            const p = ((yZero - canvasY) / chartHeight) * 10;
+            coordTime.textContent = Math.max(0, Math.min(currentMaxTime, t)).toFixed(1) + 's';
+            coordBar.textContent = Math.max(0, Math.min(10, p)).toFixed(1) + ' bar';
+        }
+    });
+    pCanvas.addEventListener('mouseleave', () => {
+        coordTime.textContent = '0.0s'; coordBar.textContent = '0.0 bar';
+    });
+
+    // ============================================
+    // Render Drawn Curve (Tab 1)
+    // ============================================
+    function renderDrawnCurve() {
+        const ctx = pCanvas.getContext('2d');
+        let fd = [];
+        for (let i = 0; i < steps; i++)
+            fd.push({x: (i/(steps-1))*currentMaxTime, y: drawnPressureData[i]});
+        drawChart(ctx, fd, t('chart.pressure_actual'), "#e74c3c", 10, currentMaxTime);
+        const maxVal = Math.max(...drawnPressureData);
+        document.getElementById('stat-pressure').innerText = maxVal.toFixed(1) + " bar";
+    }
+
+    // ============================================
+    // Preset Curves
+    // ============================================
+    function loadPresetCurve(type) {
+        resetDrawnData();
+        let piIndex = Math.round(steps * 0.25);
+        const device = selectedDevice;
+
+        if (type === 'reset') {
+            for (let i = 0; i < steps; i++) drawnPressureData[i] = 0;
+        } else if (type === 'golden') {
+            if (device === 'pump') {
+                for (let i = 0; i < steps; i++) {
+                    if (i <= piIndex) drawnPressureData[i] = (i/piIndex)*2.0;
+                    else if (i <= piIndex+8) drawnPressureData[i] = 2.0+((i-piIndex)/8)*7.0;
+                    else drawnPressureData[i] = 9.0;
+                }
+            } else {
+                if (selectedBasket === 'fast') {
+                    for (let i = 0; i < steps; i++) {
+                        if (i <= piIndex) drawnPressureData[i] = (i/piIndex)*1.5;
+                        else if (i <= piIndex+10) drawnPressureData[i] = 1.5+((i-piIndex)/10)*4.0;
+                        else if (i <= piIndex+30) drawnPressureData[i] = 5.5-((i-(piIndex+10))/20)*0.8;
+                        else drawnPressureData[i] = Math.max(3.5, 4.7-((i-(piIndex+30))/(steps-(piIndex+30)))*1.2);
+                    }
+                } else {
+                    for (let i = 0; i < steps; i++) {
+                        if (i <= piIndex) drawnPressureData[i] = (i/piIndex)*2.2;
+                        else if (i <= piIndex+8) drawnPressureData[i] = 2.2+((i-piIndex)/8)*6.6;
+                        else if (i <= piIndex+36) drawnPressureData[i] = 8.8-((i-(piIndex+8))/28)*1.8;
+                        else drawnPressureData[i] = Math.max(5.0, 7.0-((i-(piIndex+36))/(steps-(piIndex+36)))*2.0);
+                    }
+                }
+            }
+        }
+        renderDrawnCurve();
+    }
+
+    // ============================================
+    // Result Charts init (for Tab 2)
+    // ============================================
+    function initResultCharts() {
+        const pCtx = document.getElementById('resultPChart').getContext('2d');
+        const fCtx = document.getElementById('resultFChart').getContext('2d');
+        drawChart(pCtx, [], t('canvas.waiting'), "#e74c3c", 10, currentMaxTime);
+        drawChart(fCtx, [], t('canvas.waiting'), "#3498db", 5, currentMaxTime);
+    }
+
+    // ============================================
+    // Start Analysis -> Run Simulation -> Tab 2
+    // ============================================
+    let pDataArray = [];
+    let fDataArray = [];
+    let yDataArray = [];  // NEW: cumulative yield at each step
+    let globalIsChanneling = false;
+    let globalChannelingTriggerTime = null;
+    let globalIsAnomalous = null;
+
+    function startAnalysis() {
+        if (currentSubInput === 'draw') {
+            const sumP = drawnPressureData.reduce((a,b)=>a+b,0);
+            if (sumP < 2.0) {
+                alert("请先在压力曲线图表上绘制出压力变化，或加载默认曲线！");
+                return;
+            }
+        }
+        // Run simulation synchronously then show results
+        runSimulation();
+        switchTab('diagnosis');
+        renderDiagnosis();
+    }
+
+    function runSimulation() {
+        globalChannelingTriggerTime = null;
+        pDataArray = []; fDataArray = []; yDataArray = [];
+
+        const device = selectedDevice;
+        const dose = parseFloat(document.getElementById('param-dose').value);
+        const targetYield = parseFloat(document.getElementById('param-yield').value);
+        let t = 0, currentYield = 0;
+        let totalAcid = 0, totalSweet = 0, totalBitter = 0;
+        let channelingTriggered = false, channelingFactor = 1.0, peakRecordedPressure = 0;
+        let doseFactor = Math.max(0.1, (dose-12)/6.0);
+        let P_rupture = 3.5 + doseFactor * 4.2;
+        let peakP = Math.max(...drawnPressureData);
+        let adaptiveGrindFactor = 1.0;
+
+        if (currentSubInput === 'draw') {
+            let preWettingSteps = 0;
+            for (let i = 0; i < drawnPressureData.length; i++) {
+                if (drawnPressureData[i] < 1.5) preWettingSteps++;
+                else break;
+            }
+            let preWettingTime = Math.max(3.0, Math.min(12.0, (preWettingSteps/steps)*currentMaxTime));
+            let activeTime = Math.max(5.0, currentMaxTime - preWettingTime);
+            let estAvgFlow = targetYield / activeTime;
+            let estAvgPressure = Math.max(3.0, peakP * 0.75);
+            let estRequiredR = estAvgPressure / estAvgFlow;
+            let dFactor = Math.pow(dose/18, 2.0);
+            adaptiveGrindFactor = (estRequiredR / 0.825) / (6.0 * dFactor);
+            adaptiveGrindFactor = Math.max(0.2, Math.min(2.5, adaptiveGrindFactor));
+        }
+
+        let objectiveGrind = 50;
+        if (currentSubInput === 'sensory') {
+            if (sensoryFlow === 'gushing') {
+                objectiveGrind = (sensoryCrema === 'thin_bubbles' && sensoryTaste === 'very_sour_salty') ? 80 : 70;
+            } else if (sensoryFlow === 'channel_spurts') { objectiveGrind = 55;
+            } else if (sensoryFlow === 'dripping') { objectiveGrind = 15;
+            } else { objectiveGrind = sensoryTaste === 'ashy_bitter' ? 30 : 48; }
+        }
+
+        const dt = currentMaxTime / 90;
+
+        for (let step = 0; step < steps; step++) {
+            let index = step;
+            t = step * dt;
+            if (index >= steps || currentYield >= 52.0) break;
+
+            let P_actual = 0;
+            if (currentSubInput === 'draw') {
+                P_actual = drawnPressureData[index] || 0;
+            } else {
+                if (device === 'pump') {
+                    if (objectiveGrind === 80)
+                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*3.0 : 3.0+Math.sin(t*2)*0.1;
+                    else if (objectiveGrind === 70 || sensoryFlow === 'channel_spurts')
+                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*8.5 : (t <= (currentMaxTime*0.25) ? 8.5-((t-(currentMaxTime*0.15))/(currentMaxTime*0.1))*2.5 : 6.0+Math.sin(t*3)*0.15);
+                    else if (objectiveGrind === 15)
+                        P_actual = t <= (currentMaxTime*0.2) ? (t/(currentMaxTime*0.2))*9.6 : 9.6;
+                    else
+                        P_actual = t <= (currentMaxTime*0.18) ? (t/(currentMaxTime*0.18))*9.0 : 9.0;
+                } else {
+                    if (objectiveGrind === 80)
+                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*1.5 : 3.0+Math.sin(t)*0.15;
+                    else if (objectiveGrind === 70 || sensoryFlow === 'channel_spurts')
+                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*2.0 : (t <= (currentMaxTime*0.28) ? 2.0+((t-(currentMaxTime*0.15))/(currentMaxTime*0.13))*2.5 : Math.max(1.5, 4.5-(t-(currentMaxTime*0.28))*0.25));
+                    else if (objectiveGrind === 15)
+                        P_actual = t <= (currentMaxTime*0.25) ? (t/(currentMaxTime*0.25))*2.5 : Math.min(9.6, 2.5+(t-(currentMaxTime*0.25))*0.8);
+                    else
+                        P_actual = t <= (currentMaxTime*0.2) ? (t/(currentMaxTime*0.2))*2.2 : (t <= (currentMaxTime*0.3) ? 2.2 : Math.max(5.2, 8.5-(t-(currentMaxTime*0.3))*0.12));
+                }
+            }
+
+            if (P_actual > peakRecordedPressure) peakRecordedPressure = P_actual;
+            let grindFactor = currentSubInput === 'draw' ? adaptiveGrindFactor : Math.pow((100-objectiveGrind)/50, 2.5);
+            let dFactor = Math.pow(dose/18, 2.0);
+            let R_base = 6.0 * grindFactor * dFactor;
+            let isLateStage = (t > currentMaxTime*0.75 || currentYield > targetYield*0.8);
+
+            if (index >= 5 && currentSubInput === 'draw' && !isLateStage) {
+                let prevP = drawnPressureData[index-5];
+                if (prevP - P_actual > 1.6 && P_actual < 4.5) channelingTriggered = true;
+            }
+            if (currentSubInput === 'draw' && !isLateStage && peakRecordedPressure - P_actual > 2.5 && P_actual < 3.0) {
+                channelingTriggered = true;
+            }
+            if (currentSubInput === 'draw' && !isLateStage && peakRecordedPressure >= 3.2 && peakRecordedPressure <= 7.2) {
+                if (t > (currentMaxTime*0.25) && P_actual < peakRecordedPressure - 0.4 && !channelingTriggered) {
+                    channelingTriggered = true;
+                    globalChannelingTriggerTime = t;
+                }
+            }
+            if (channelingTriggered) {
+                if (globalChannelingTriggerTime === null) globalChannelingTriggerTime = t;
+                let decayRate = 0.25, targetFactor = dose < 16.0 ? 0.15 : 0.35;
+                channelingFactor += (targetFactor - channelingFactor) * decayRate;
+            }
+
+            let erosionFactor = 1.0 - 0.35 * Math.min(1.0, currentYield / Math.max(1.0, targetYield));
+            let R_actual = R_base * channelingFactor * erosionFactor;
+            if (t <= (currentMaxTime*0.25) && P_actual <= 3.0) R_actual = R_actual * 0.2;
+
+            let flow = 0;
+            if (currentSubInput === 'draw' && t < 10.0 && currentYield < 0.1 && P_actual < 1.5) {
+                flow = 0;
+            } else {
+                flow = P_actual / Math.max(0.4, R_actual);
+                if (P_actual < 0.2) flow = 0;
+                if (channelingTriggered) flow = 2.4 + (3.3-2.4)*(1.0-R_actual/R_base);
+            }
+            flow = Math.max(0, flow);
+
+            pDataArray.push({x: t, y: P_actual});
+            fDataArray.push({x: t, y: flow});
+            currentYield += flow * dt;
+            yDataArray.push({x: t, y: currentYield});
+
+            let extractedFactor = currentYield / targetYield;
+            let currentAcid = 0, currentSweet = 0, currentBitter = 0;
+            if (P_actual > 0.2) {
+                if (t <= (currentMaxTime*0.25)) { currentAcid = flow * 0.35; }
+                else {
+                    if (extractedFactor < 0.35) { currentAcid = flow*1.8; currentSweet = flow*0.45; }
+                    else if (extractedFactor < 0.75) { currentAcid = flow*0.15; currentSweet = flow*2.3; currentBitter = flow*0.12*(channelingTriggered?5.0:1.0); }
+                    else { currentSweet = flow*0.25; currentBitter = flow*1.9*(channelingTriggered?5.5:1.0); }
+                }
+            }
+            totalAcid += currentAcid * dt;
+            totalSweet += currentSweet * dt;
+            totalBitter += currentBitter * dt;
+        }
+
+        globalIsChanneling = channelingTriggered;
+        const maxP = pDataArray.length > 0 ? Math.max(...pDataArray.map(d=>d.y)) : 0;
+        const maxF = fDataArray.length > 0 ? Math.max(...fDataArray.map(d=>d.y)) : 0;
+        const finalY = yDataArray.length > 0 ? yDataArray[yDataArray.length-1].y : 0;
+
+        // Update stat displays
+        document.getElementById('stat-pressure').innerText = maxP.toFixed(1) + " bar";
+        document.getElementById('stat-flow').innerText = maxF.toFixed(1) + " g/s";
+        document.getElementById('stat-yield').innerText = finalY.toFixed(1) + " g";
+        document.getElementById('stat-time').innerText = currentMaxTime.toFixed(1) + "s";
+
+        // Flavor bars
+        const totalFlavor = totalAcid + totalSweet + totalBitter;
+        if (totalFlavor > 0) {
+            let aP = Math.round((totalAcid/totalFlavor)*100);
+            let sP = Math.round((totalSweet/totalFlavor)*100);
+            let bP = Math.round((totalBitter/totalFlavor)*100);
+            document.getElementById('block-acid').style.width = aP+'%';
+            document.getElementById('block-sweet').style.width = sP+'%';
+            document.getElementById('block-bitter').style.width = bP+'%';
+            document.getElementById('block-acid').innerText = t('flavor.acid')+' ('+aP+'%)';
+            document.getElementById('block-sweet').innerText = t('flavor.sweet')+' ('+sP+'%)';
+            document.getElementById('block-bitter').innerText = t('flavor.bitter')+' ('+bP+'%)';
+        }
+
+        // Draw result charts
+        drawResultCharts();
+    }
+
+    // ============================================
+    // Draw Result Charts (Tab 2)
+    // ============================================
+    function drawResultCharts(activeT) {
+        const pCtx = document.getElementById('resultPChart').getContext('2d');
+        const fCtx = document.getElementById('resultFChart').getContext('2d');
+        drawChart(pCtx, pDataArray, t('chart.pressure_title'), "#e74c3c", 10, currentMaxTime, activeT);
+        drawChart(fCtx, fDataArray, t('chart.flow_title'), "#3498db", 5, currentMaxTime, activeT);
+    }
+
+    // ============================================
+    // Tab 2 Chart Cursor Tracking
+    // ============================================
+    function setupResultTracking() {
+        const pRes = document.getElementById('resultPChart');
+        const fRes = document.getElementById('resultFChart');
+
+        function onResultMove(e, sourceCanvas) {
+            const rect = sourceCanvas.getBoundingClientRect();
+            const scaleX = sourceCanvas.width / rect.width;
+            const cx = e.clientX || (e.touches && e.touches[0].clientX);
+            if (!cx) return;
+            const canvasX = (cx - rect.left) * scaleX;
+            const pl = 45, pr = 20, cw = 350 - pl - pr, xz = pl;
+            if (canvasX >= xz && canvasX <= 350 - pr) {
+                let t = ((canvasX - xz) / cw) * currentMaxTime;
+                t = Math.max(0, Math.min(currentMaxTime, t));
+                // Find nearest data point
+                const idx = Math.round((t / currentMaxTime) * (pDataArray.length - 1));
+                const boundIdx = Math.max(0, Math.min(pDataArray.length - 1, idx));
+                const pVal = pDataArray.length > boundIdx ? pDataArray[boundIdx].y : 0;
+                const fVal = fDataArray.length > boundIdx ? fDataArray[boundIdx].y : 0;
+                const yVal = yDataArray.length > boundIdx ? yDataArray[boundIdx].y : 0;
+                document.getElementById('stat-time').innerText = t.toFixed(1) + "s";
+                document.getElementById('stat-pressure').innerText = pVal.toFixed(1) + " bar";
+                document.getElementById('stat-flow').innerText = fVal.toFixed(1) + " g/s";
+                document.getElementById('stat-yield').innerText = yVal.toFixed(1) + " g";
+                drawResultCharts(t);
+            }
+        }
+
+        function onResultLeave() {
+            // Reset to final values
+            const lastP = pDataArray.length > 0 ? pDataArray[pDataArray.length-1].y : 0;
+            const lastF = fDataArray.length > 0 ? fDataArray[fDataArray.length-1].y : 0;
+            const lastY = yDataArray.length > 0 ? yDataArray[yDataArray.length-1].y : 0;
+            document.getElementById('stat-time').innerText = currentMaxTime.toFixed(1) + "s";
+            document.getElementById('stat-pressure').innerText = lastP.toFixed(1) + " bar";
+            document.getElementById('stat-flow').innerText = lastF.toFixed(1) + " g/s";
+            document.getElementById('stat-yield').innerText = lastY.toFixed(1) + " g";
+            drawResultCharts();
+        }
+
+        pRes.addEventListener('mousemove', (e) => onResultMove(e, pRes));
+        pRes.addEventListener('touchmove', (e) => onResultMove(e, pRes), {passive:true});
+        pRes.addEventListener('mouseleave', onResultLeave);
+        pRes.addEventListener('touchend', onResultLeave);
+        fRes.addEventListener('mousemove', (e) => onResultMove(e, fRes));
+        fRes.addEventListener('touchmove', (e) => onResultMove(e, fRes), {passive:true});
+        fRes.addEventListener('mouseleave', onResultLeave);
+        fRes.addEventListener('touchend', onResultLeave);
+    }
+
+    // ============================================
+    // Diagnosis Rendering
+    // ============================================
+    function renderDiagnosis() {
+        const diagCard = document.getElementById('diag-card');
+        const diagTitle = document.getElementById('diag-title');
+        const diagText = document.getElementById('diag-text');
+        const device = selectedDevice;
+        const dose = parseFloat(document.getElementById('param-dose').value);
+        const maxP = pDataArray.length > 0 ? Math.max(...pDataArray.map(d=>d.y)) : 0;
+        const maxF = fDataArray.length > 0 ? Math.max(...fDataArray.map(d=>d.y)) : 0;
+        const finalF = fDataArray.length > 0 ? fDataArray[fDataArray.length-1].y || 0 : 0;
+
+        const basketThresh = {
+            standard:   { min: 6.5, max: 10.5, ideal: '8~10' },
+            fast:       { min: 2.0, max: 6.5, ideal: '3~5.5' },
+            pressurized:{ min: 6.0, max: 12, ideal: '8~10' }
+        };
+        const th = basketThresh[selectedBasket] || basketThresh.standard;
+
+        let isChokedFlow = (maxP > 8.0 && finalF < 0.45);
+        let isLeverChannelingCollapse = (device === 'lever' && globalIsChanneling && maxP >= 3.2 && maxP <= 7.2);
+        let isGrindTooCoarse = (maxP < th.min && maxF > 2.6);
+        let isPressureGood = (maxP >= th.min && maxP <= th.max);
+        let isPressureLow = (maxP < th.min);
+        let isPressureHigh = (maxP > th.max);
+
+        let title = '⚙️ ' + t('diag.title');
+        let text = '';
+        let cardClass = '';
+
+        if (device === 'lever') {
+            if (isLeverChannelingCollapse || (currentSubInput === 'sensory' && sensoryFlow === 'gushing')) {
+                cardClass = 'alert';
+                title = t('diag.lever_collapse_title');
+                text = t('diag.lever_collapse_text1') + maxP.toFixed(1) + t('diag.lever_collapse_text2') + maxF.toFixed(1) + t('diag.lever_collapse_text3');
+            } else if (isChokedFlow || (currentSubInput === 'sensory' && sensoryFlow === 'dripping')) {
+                cardClass = 'alert';
+                title = t('diag.choked_title');
+                text = t('diag.choked_text') + maxP.toFixed(1) + t('diag.choked_text2') + maxF.toFixed(1) + t('diag.choked_text3');
+            } else if (globalIsChanneling || (currentSubInput === 'sensory' && sensoryFlow === 'channel_spurts')) {
+                cardClass = 'alert';
+                title = t('diag.channel_title');
+                text = t('diag.channel_text');
+            } else if (isPressureLow) {
+                cardClass = 'alert';
+                let basketName = selectedBasket === 'fast' ? t('basket.fast') : (selectedBasket === 'pressurized' ? t('basket.pressurized') : t('basket.standard'));
+                title = t('diag.low_pressure_title');
+                text = t('diag.low_pressure_text') + maxP.toFixed(1) + t('diag.low_pressure_text2') + basketName + t('diag.low_pressure_text3') + th.ideal + t('diag.low_pressure_text4');
+                if (selectedBasket === 'fast') {
+                    text += t('diag.low_pressure_fast1') + maxP.toFixed(1) + t('diag.low_pressure_fast2') + t('diag.low_pressure_fast3');
+                } else {
+                    text += t('diag.low_pressure_other1') + maxP.toFixed(1) + t('diag.low_pressure_other2') + basketName + t('diag.low_pressure_other3') + t('diag.low_pressure_other4') + dose.toFixed(1) + t('diag.low_pressure_other5');
+                }
+            } else if (isPressureHigh) {
+                cardClass = 'alert';
+                title = t('diag.high_pressure_title');
+                text = t('diag.high_pressure_text') + maxP.toFixed(1) + t('diag.high_pressure_text2');
+            } else {
+                cardClass = 'success';
+                let basketLabel = selectedBasket === 'fast' ? t('basket.fast_label') : (selectedBasket === 'pressurized' ? t('basket.pressurized_label') : t('basket.standard_label'));
+                title = t('diag.success_title') + basketLabel + ' ' + t('diag.success_title2');
+                text = t('diag.success_text') + maxP.toFixed(1) + t('diag.success_text2') + t('diag.success_text3');
+            }
+        } else {
+            // Pump machine
+            if (isGrindTooCoarse || (currentSubInput === 'sensory' && sensoryFlow === 'gushing')) {
+                cardClass = 'alert';
+                title = t('diag.pump_coarse_title');
+                text = t('diag.pump_coarse_text') + maxP.toFixed(1) + t('diag.pump_coarse_text2');
+            } else if (isChokedFlow) {
+                cardClass = 'alert';
+                title = t('diag.pump_choked_title');
+                text = t('diag.pump_choked_text');
+            } else {
+                cardClass = 'success';
+                title = t('diag.pump_success_title');
+                text = t('diag.pump_success_text');
+            }
+        }
+
+        diagCard.className = "diag-card" + (cardClass ? ' ' + cardClass : '');
+        diagTitle.innerHTML = title;
+        diagText.innerHTML = text;
+    }
+
+    // ============================================
+    // Restart
+    // ============================================
+    function restartAnalysis() {
+        pDataArray = []; fDataArray = []; yDataArray = [];
+        resetDrawnData();
+        document.getElementById('stat-pressure').innerText = "0.0 bar";
+        document.getElementById('stat-flow').innerText = "0.0 g/s";
+        document.getElementById('stat-yield').innerText = "0.0 g";
+        document.getElementById('stat-time').innerText = "0.0s";
+        document.getElementById('block-acid').style.width = '33.3%';
+        document.getElementById('block-sweet').style.width = '33.3%';
+        document.getElementById('block-bitter').style.width = '33.3%';
+        document.getElementById('block-acid').innerText = t('flavor.acid') + ' (0%)';
+        document.getElementById('block-sweet').innerText = t('flavor.sweet') + ' (0%)';
+        document.getElementById('block-bitter').innerText = t('flavor.bitter') + ' (0%)';
+        const dc = document.getElementById('diag-card');
+        dc.className = "diag-card";
+        document.getElementById('diag-title').innerHTML = '⚙️ ' + t('diag.title');
+        document.getElementById('diag-text').innerHTML = t('diag.waiting_text');
+        switchTab('input');
+        if (currentSubInput === 'draw') loadPresetCurve('golden');
+        initResultCharts();
+    }
+
+    // ============================================
+    // Help Toggle
+    // ============================================
+    function toggleHelp() {
+        const panel = document.getElementById('help-panel');
+        helpVisible = !helpVisible;
+        if (helpVisible) panel.classList.add('visible');
+        else panel.classList.remove('visible');
+    }
+
+    // ============================================
+    // Copy Debug Data
+    // ============================================
+    function copyDebugData() {
+        const debugData = {
+            device: selectedDevice,
+            basket: selectedBasket,
+            inputMode: currentSubInput,
+            sensoryFlow: currentSubInput === 'sensory' ? sensoryFlow : null,
+            sensoryCrema: currentSubInput === 'sensory' ? sensoryCrema : null,
+            sensoryTaste: currentSubInput === 'sensory' ? sensoryTaste : null,
+            dose: parseFloat(document.getElementById('param-dose').value),
+            yield: parseFloat(document.getElementById('param-yield').value),
+            timeLimit: currentMaxTime,
+            maxP: pDataArray.length > 0 ? parseFloat(Math.max(...pDataArray.map(d=>d.y)).toFixed(2)) : 0,
+            maxFlow: fDataArray.length > 0 ? parseFloat(Math.max(...fDataArray.map(d=>d.y)).toFixed(2)) : 0,
+            channelingTriggered: globalIsChanneling,
+            channelingTime: globalChannelingTriggerTime ? parseFloat(globalChannelingTriggerTime.toFixed(2)) : null,
+            drawnPressureCurve: drawnPressureData.map(v => parseFloat(v.toFixed(2)))
+        };
+        const textarea = document.getElementById('debug-output-text');
+        textarea.value = JSON.stringify(debugData, null, 2);
+        textarea.select(); textarea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(textarea.value).then(() => {
+            const toast = document.getElementById('debug-copy-toast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }).catch(() => { alert("自动复制失败，请手动复制！"); });
+    }
+
+    // ============================================
+    // Chart Drawing Engine (preserved)
+    // ============================================
+    function drawChart(ctx, data, title, color, maxY, maxX, activeT) {
+        const w = ctx.canvas.width, h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        const paddingLeft = 45, paddingRight = 20, paddingTop = 32, paddingBottom = 24;
+        const chartWidth = w - paddingLeft - paddingRight;
+        const chartHeight = h - paddingTop - paddingBottom;
+        const xZero = paddingLeft, yZero = h - paddingBottom;
+        const yTicks = 4;
+
+        ctx.font = "10px 'JetBrains Mono', monospace";
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "right";
+        for (let i = 0; i <= yTicks; i++) {
+            let val = (maxY / yTicks) * i, y = yZero - (val/maxY) * chartHeight;
+            ctx.beginPath();
+            ctx.strokeStyle = i === 0 ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.04)";
+            ctx.lineWidth = 1;
+            ctx.moveTo(xZero, y); ctx.lineTo(w-paddingRight, y);
+            ctx.stroke();
+            ctx.fillText(val.toFixed(0)+(maxY===10?"b":"g"), xZero-8, y);
+        }
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const xInterval = Math.max(5, Math.round(maxX/4/5)*5);
+        for (let sec = 0; sec <= maxX; sec += xInterval) {
+            let x = xZero + (sec/maxX) * chartWidth;
+            if (sec > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = "rgba(255,255,255,0.04)";
+                ctx.moveTo(x, yZero); ctx.lineTo(x, paddingTop);
+                ctx.stroke();
+            }
+            ctx.fillText(sec+"s", x, yZero+6);
+        }
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.font = "600 12px 'Outfit', sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.fillText(title, xZero, paddingTop-10);
+
+        if (!data || data.length === 0) {
+            ctx.fillStyle = "rgba(255,255,255,0.15)";
+            ctx.textAlign = "center";
+            ctx.font = "12px 'Outfit', sans-serif";
+            ctx.fillText(t('canvas.waiting'), w/2, h/2);
+            return;
+        }
+
+        let rgb = color === "#e74c3c" ? "231,76,60" : "52,152,219";
+        let fillGrad = ctx.createLinearGradient(0, paddingTop, 0, yZero);
+        fillGrad.addColorStop(0, `rgba(${rgb},0.12)`);
+        fillGrad.addColorStop(1, `rgba(${rgb},0.0)`);
+
+        ctx.beginPath();
+        ctx.moveTo(xZero+(data[0].x/maxX)*chartWidth, yZero);
+        data.forEach(pt => {
+            ctx.lineTo(xZero+(pt.x/maxX)*chartWidth, yZero-(pt.y/maxY)*chartHeight);
+        });
+        let lp = data[data.length-1];
+        ctx.lineTo(xZero+(lp.x/maxX)*chartWidth, yZero);
+        ctx.closePath();
+        ctx.fillStyle = fillGrad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        data.forEach((pt, idx) => {
+            let cx = xZero + (pt.x/maxX)*chartWidth, cy = yZero - (pt.y/maxY)*chartHeight;
+            if (idx === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+        });
+        ctx.stroke();
+
+        if (activeT != null) {
+            let cx = xZero + (activeT/maxX)*chartWidth;
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(255,255,255,0.22)";
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([4,4]);
+            ctx.moveTo(cx, paddingTop); ctx.lineTo(cx, yZero);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        let tp = data[data.length-1];
+        if (activeT != null && data.length > 0) {
+            let idx = Math.round((activeT/maxX)*(data.length-1));
+            idx = Math.max(0, Math.min(data.length-1, idx));
+            tp = data[idx];
+        }
+        let cv = tp.y, lcx = xZero+(tp.x/maxX)*chartWidth, lcy = yZero-(cv/maxY)*chartHeight;
+        ctx.beginPath(); ctx.arc(lcx, lcy, 6, 0, 2*Math.PI);
+        ctx.fillStyle = `rgba(${rgb},0.4)`; ctx.fill();
+        ctx.beginPath(); ctx.arc(lcx, lcy, 3, 0, 2*Math.PI);
+        ctx.fillStyle = color; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
+        ctx.fill(); ctx.stroke();
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 9px 'JetBrains Mono', monospace";
+        let unit = maxY === 10 ? " bar" : " g/s";
+        let bt = cv.toFixed(1) + unit;
+        let tw = ctx.measureText(bt).width, bw = tw+8, bh = 14;
+        let bx = lcx - bw/2, by = lcy - 20;
+        if (bx < xZero) bx = xZero;
+        if (bx+bw > w-paddingRight) bx = w-paddingRight-bw;
+        ctx.fillStyle = "rgba(0,0,0,0.85)";
+        roundRect(ctx, bx, by, bw, bh, 3);
+        ctx.beginPath();
+        ctx.moveTo(lcx-2.5, by+bh); ctx.lineTo(lcx, by+bh+2); ctx.lineTo(lcx+2.5, by+bh);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(bt, lcx, by+bh/2);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y);
+        ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h-r);
+        ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+        ctx.lineTo(x+r, y+h);
+        ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+        ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // ============================================
+    // I18n: switchLang — call from UI buttons
+    // ============================================
+    function switchLang(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+        // Apply to static DOM
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            el.innerHTML = t(key);
+        });
+        // Update stat labels
+        document.querySelectorAll('[data-i18n-statlbl]').forEach(el => {
+            el.textContent = t(el.dataset.i18nStatlbl);
+        });
+        // Update dynamic charts & diagnosis
+        if (typeof pDataArray !== 'undefined' && pDataArray.length > 0) {
+            renderDiagnosis();
+            renderFlavorBars();
+            drawResultCharts();
+        } else {
+            const pCtx = document.getElementById('resultPChart').getContext('2d');
+            const fCtx = document.getElementById('resultFChart').getContext('2d');
+            drawChart(pCtx, [], t('canvas.waiting'), "#e74c3c", 10, currentMaxTime);
+            drawChart(fCtx, [], t('canvas.waiting'), "#3498db", 5, currentMaxTime);
+        }
+        // Update help panel title
+        renderHelpPanelI18n();
+        // Update debug copy toast
+        document.getElementById('debug-copy-toast').textContent = t('action.copied');
+        localStorage.setItem('espresso_lang', lang);
+    }
+
+    function renderFlavorBars() {
+        // Re-render flavor bar labels using current language
+        const aP = document.getElementById('block-acid');
+        const sP = document.getElementById('block-sweet');
+        const bP = document.getElementById('block-bitter');
+        const totalFlavor = (parseInt(aP.style.width) || 33) + (parseInt(sP.style.width) || 33) + (parseInt(bP.style.width) || 33);
+        if (totalFlavor === 99 || totalFlavor === 100) {
+            // Already has real data from simulation, update labels only
+            aP.innerHTML = t('flavor.acid') + ' (' + parseInt(aP.style.width) + '%)';
+            sP.innerHTML = t('flavor.sweet') + ' (' + parseInt(sP.style.width) + '%)';
+            bP.innerHTML = t('flavor.bitter') + ' (' + parseInt(bP.style.width) + '%)';
+        }
+    }
+
+    function renderHelpPanelI18n() {
+        document.querySelector('#help-panel [data-i18n="help.darcy_title"]').innerHTML = t('help.darcy_title');
+        document.querySelector('#help-panel [data-i18n="help.darcy_text"]').innerHTML = t('help.darcy_text');
+        document.querySelector('#help-panel [data-i18n="help.darcy_formula"]').innerHTML = t('help.darcy_formula');
+        document.querySelector('#help-panel [data-i18n="help.darcy_desc"]').innerHTML = t('help.darcy_desc');
+        document.querySelector('#help-panel [data-i18n="help.darcy_detail"]').innerHTML = t('help.darcy_detail');
+        document.querySelector('#help-panel [data-i18n="help.basket_title"]').innerHTML = t('help.basket_title');
+        document.querySelector('#help-panel [data-i18n="help.diag_logic_title"]').innerHTML = t('help.diag_logic_title');
+        document.querySelector('#help-panel [data-i18n="help.diag_logic_text"]').innerHTML = t('help.diag_logic_text');
+        document.querySelector('#help-panel [data-i18n="help.diag_logic_list"]').innerHTML = t('help.diag_logic_list');
+        // Basket table headers
+        document.querySelectorAll('#help-panel th[data-i18n]').forEach(el => {
+            el.innerHTML = t(el.dataset.i18n);
+        });
+        document.querySelectorAll('#help-panel td[data-i18n]').forEach(el => {
+            el.innerHTML = t(el.dataset.i18n);
+        });
+    }
+
+    // ============================================
+    // Init
+    // ============================================
+    window.onload = function() {
+        updateMaxTime();
+        document.getElementById('coord-tip').style.display = 'block';
+        loadPresetCurve('golden');
+        initResultCharts();
+        setupResultTracking();
+        // Apply saved language
+        switchLang(currentLang);
+        document.querySelector('.lang-btn[data-lang="'+currentLang+'"]').classList.add('active');
+        document.querySelectorAll('.lang-btn[data-lang]:not([data-lang="'+currentLang+'"])').forEach(b => b.classList.remove('active'));
+    };
+</script>
+</body>
+</html>

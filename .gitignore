@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+Thumbs.db
+
+# opencode 配置（个人开发工具，不共享）
+.antigravitycli/
+
+# 开发过程截图/调试产物
+screenshot*.png
+snapshot.txt
+
+# 参考素材（个人照片、视频，不上传）
+参考配置/

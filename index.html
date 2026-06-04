@@ -1503,7 +1503,9 @@ function t(key) {
                 channelingTriggered = true;
             }
             if (currentSubInput === 'draw' && !isLateStage && peakRecordedPressure >= 3.2 && peakRecordedPressure <= 7.2) {
-                if (elapsed > (currentMaxTime*0.25) && P_actual < peakRecordedPressure - 0.4 && !channelingTriggered) {
+                // 压降阈值因粉碗类型而异：快速粉碗低压高流，尾段自然降压幅度更大
+                let channelDropThreshold = selectedBasket === 'fast' ? 1.2 : (selectedBasket === 'pressurized' ? 0.6 : 0.4);
+                if (elapsed > (currentMaxTime*0.25) && P_actual < peakRecordedPressure - channelDropThreshold && !channelingTriggered) {
                     channelingTriggered = true;
                     globalChannelingTriggerTime = elapsed;
                 }
@@ -1638,7 +1640,19 @@ function t(key) {
         const th = basketThresh[selectedBasket] || basketThresh.standard;
 
         let isChokedFlow = (maxP > 8.0 && finalF < 0.45);
-        let isLeverChannelingCollapse = (device === 'lever' && globalIsChanneling && maxP >= 3.2 && maxP <= 7.2);
+        // 通道崩溃判定需结合粉碗正常压力区间
+        let isLeverChannelingCollapse = false;
+        if (device === 'lever' && globalIsChanneling) {
+            if (selectedBasket === 'fast') {
+                // 快速粉碗正常 2~6.5 bar，压力在此区间内不视为抗剪失效
+                isLeverChannelingCollapse = (maxP < th.min);
+            } else if (selectedBasket === 'pressurized') {
+                isLeverChannelingCollapse = (maxP < th.min);
+            } else {
+                // 标准粉碗：原逻辑
+                isLeverChannelingCollapse = (maxP >= 3.2 && maxP <= 7.2);
+            }
+        }
         let isGrindTooCoarse = (maxP < th.min && maxF > 2.6);
         let isPressureGood = (maxP >= th.min && maxP <= th.max);
         let isPressureLow = (maxP < th.min);

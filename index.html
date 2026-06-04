@@ -1346,7 +1346,7 @@ function t(key) {
         const device = selectedDevice;
         const dose = parseFloat(document.getElementById('param-dose').value);
         const targetYield = parseFloat(document.getElementById('param-yield').value);
-        let t = 0, currentYield = 0;
+        let elapsed = 0, currentYield = 0;
         let totalAcid = 0, totalSweet = 0, totalBitter = 0;
         let channelingTriggered = false, channelingFactor = 1.0, peakRecordedPressure = 0;
         let doseFactor = Math.max(0.1, (dose-12)/6.0);
@@ -1383,7 +1383,7 @@ function t(key) {
 
         for (let step = 0; step < steps; step++) {
             let index = step;
-            t = step * dt;
+            elapsed = step * dt;
             if (index >= steps || currentYield >= 52.0) break;
 
             let P_actual = 0;
@@ -1392,22 +1392,22 @@ function t(key) {
             } else {
                 if (device === 'pump') {
                     if (objectiveGrind === 80)
-                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*3.0 : 3.0+Math.sin(t*2)*0.1;
+                        P_actual = elapsed <= (currentMaxTime*0.15) ? (elapsed/(currentMaxTime*0.15))*3.0 : 3.0+Math.sin(elapsed*2)*0.1;
                     else if (objectiveGrind === 70 || sensoryFlow === 'channel_spurts')
-                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*8.5 : (t <= (currentMaxTime*0.25) ? 8.5-((t-(currentMaxTime*0.15))/(currentMaxTime*0.1))*2.5 : 6.0+Math.sin(t*3)*0.15);
+                        P_actual = elapsed <= (currentMaxTime*0.15) ? (elapsed/(currentMaxTime*0.15))*8.5 : (elapsed <= (currentMaxTime*0.25) ? 8.5-((elapsed-(currentMaxTime*0.15))/(currentMaxTime*0.1))*2.5 : 6.0+Math.sin(elapsed*3)*0.15);
                     else if (objectiveGrind === 15)
-                        P_actual = t <= (currentMaxTime*0.2) ? (t/(currentMaxTime*0.2))*9.6 : 9.6;
+                        P_actual = elapsed <= (currentMaxTime*0.2) ? (elapsed/(currentMaxTime*0.2))*9.6 : 9.6;
                     else
-                        P_actual = t <= (currentMaxTime*0.18) ? (t/(currentMaxTime*0.18))*9.0 : 9.0;
+                        P_actual = elapsed <= (currentMaxTime*0.18) ? (elapsed/(currentMaxTime*0.18))*9.0 : 9.0;
                 } else {
                     if (objectiveGrind === 80)
-                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*1.5 : 3.0+Math.sin(t)*0.15;
+                        P_actual = elapsed <= (currentMaxTime*0.15) ? (elapsed/(currentMaxTime*0.15))*1.5 : 3.0+Math.sin(elapsed)*0.15;
                     else if (objectiveGrind === 70 || sensoryFlow === 'channel_spurts')
-                        P_actual = t <= (currentMaxTime*0.15) ? (t/(currentMaxTime*0.15))*2.0 : (t <= (currentMaxTime*0.28) ? 2.0+((t-(currentMaxTime*0.15))/(currentMaxTime*0.13))*2.5 : Math.max(1.5, 4.5-(t-(currentMaxTime*0.28))*0.25));
+                        P_actual = elapsed <= (currentMaxTime*0.15) ? (elapsed/(currentMaxTime*0.15))*2.0 : (elapsed <= (currentMaxTime*0.28) ? 2.0+((elapsed-(currentMaxTime*0.15))/(currentMaxTime*0.13))*2.5 : Math.max(1.5, 4.5-(elapsed-(currentMaxTime*0.28))*0.25));
                     else if (objectiveGrind === 15)
-                        P_actual = t <= (currentMaxTime*0.25) ? (t/(currentMaxTime*0.25))*2.5 : Math.min(9.6, 2.5+(t-(currentMaxTime*0.25))*0.8);
+                        P_actual = elapsed <= (currentMaxTime*0.25) ? (elapsed/(currentMaxTime*0.25))*2.5 : Math.min(9.6, 2.5+(elapsed-(currentMaxTime*0.25))*0.8);
                     else
-                        P_actual = t <= (currentMaxTime*0.2) ? (t/(currentMaxTime*0.2))*2.2 : (t <= (currentMaxTime*0.3) ? 2.2 : Math.max(5.2, 8.5-(t-(currentMaxTime*0.3))*0.12));
+                        P_actual = elapsed <= (currentMaxTime*0.2) ? (elapsed/(currentMaxTime*0.2))*2.2 : (elapsed <= (currentMaxTime*0.3) ? 2.2 : Math.max(5.2, 8.5-(elapsed-(currentMaxTime*0.3))*0.12));
                 }
             }
 
@@ -1415,7 +1415,7 @@ function t(key) {
             let grindFactor = currentSubInput === 'draw' ? adaptiveGrindFactor : Math.pow((100-objectiveGrind)/50, 2.5);
             let dFactor = Math.pow(dose/18, 2.0);
             let R_base = 6.0 * grindFactor * dFactor;
-            let isLateStage = (t > currentMaxTime*0.75 || currentYield > targetYield*0.8);
+            let isLateStage = (elapsed > currentMaxTime*0.75 || currentYield > targetYield*0.8);
 
             if (index >= 5 && currentSubInput === 'draw' && !isLateStage) {
                 let prevP = drawnPressureData[index-5];
@@ -1425,23 +1425,23 @@ function t(key) {
                 channelingTriggered = true;
             }
             if (currentSubInput === 'draw' && !isLateStage && peakRecordedPressure >= 3.2 && peakRecordedPressure <= 7.2) {
-                if (t > (currentMaxTime*0.25) && P_actual < peakRecordedPressure - 0.4 && !channelingTriggered) {
+                if (elapsed > (currentMaxTime*0.25) && P_actual < peakRecordedPressure - 0.4 && !channelingTriggered) {
                     channelingTriggered = true;
-                    globalChannelingTriggerTime = t;
+                    globalChannelingTriggerTime = elapsed;
                 }
             }
             if (channelingTriggered) {
-                if (globalChannelingTriggerTime === null) globalChannelingTriggerTime = t;
+                if (globalChannelingTriggerTime === null) globalChannelingTriggerTime = elapsed;
                 let decayRate = 0.25, targetFactor = dose < 16.0 ? 0.15 : 0.35;
                 channelingFactor += (targetFactor - channelingFactor) * decayRate;
             }
 
             let erosionFactor = 1.0 - 0.35 * Math.min(1.0, currentYield / Math.max(1.0, targetYield));
             let R_actual = R_base * channelingFactor * erosionFactor;
-            if (t <= (currentMaxTime*0.25) && P_actual <= 3.0) R_actual = R_actual * 0.2;
+            if (elapsed <= (currentMaxTime*0.25) && P_actual <= 3.0) R_actual = R_actual * 0.2;
 
             let flow = 0;
-            if (currentSubInput === 'draw' && t < 10.0 && currentYield < 0.1 && P_actual < 1.5) {
+            if (currentSubInput === 'draw' && elapsed < 10.0 && currentYield < 0.1 && P_actual < 1.5) {
                 flow = 0;
             } else {
                 flow = P_actual / Math.max(0.4, R_actual);
@@ -1450,15 +1450,15 @@ function t(key) {
             }
             flow = Math.max(0, flow);
 
-            pDataArray.push({x: t, y: P_actual});
-            fDataArray.push({x: t, y: flow});
+            pDataArray.push({x: elapsed, y: P_actual});
+            fDataArray.push({x: elapsed, y: flow});
             currentYield += flow * dt;
-            yDataArray.push({x: t, y: currentYield});
+            yDataArray.push({x: elapsed, y: currentYield});
 
             let extractedFactor = currentYield / targetYield;
             let currentAcid = 0, currentSweet = 0, currentBitter = 0;
             if (P_actual > 0.2) {
-                if (t <= (currentMaxTime*0.25)) { currentAcid = flow * 0.35; }
+                if (elapsed <= (currentMaxTime*0.25)) { currentAcid = flow * 0.35; }
                 else {
                     if (extractedFactor < 0.35) { currentAcid = flow*1.8; currentSweet = flow*0.45; }
                     else if (extractedFactor < 0.75) { currentAcid = flow*0.15; currentSweet = flow*2.3; currentBitter = flow*0.12*(channelingTriggered?5.0:1.0); }

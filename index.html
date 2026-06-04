@@ -1325,7 +1325,16 @@ function t(key) {
     let globalChannelingTriggerTime = null;
     let globalIsAnomalous = null;
 
+    // ============================================
+    // Animated Simulation — 逐帧绘制曲线
+    // ============================================
+    let globalFlavorAcid = 0, globalFlavorSweet = 0, globalFlavorBitter = 0;
+    let animFrameStep = 0;
+    let animFrameId = null;
+
     function startAnalysis() {
+        // Cancel any previous animation
+        if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
         if (currentSubInput === 'draw') {
             const sumP = drawnPressureData.reduce((a,b)=>a+b,0);
             if (sumP < 2.0) {
@@ -1333,14 +1342,83 @@ function t(key) {
                 return;
             }
         }
-        // Run simulation synchronously then show results
-        runSimulation();
+        // Switch to diagnosis tab
         switchTab('diagnosis');
-        renderDiagnosis();
+
+        // Reset all UI to initial state
+        pDataArray = []; fDataArray = []; yDataArray = [];
+        document.getElementById('stat-pressure').innerText = "0.0 bar";
+        document.getElementById('stat-flow').innerText = "0.0 g/s";
+        document.getElementById('stat-yield').innerText = "0.0 g";
+        document.getElementById('stat-time').innerText = "0.0s";
+        document.getElementById('block-acid').style.width = '33.3%';
+        document.getElementById('block-acid').innerText = t('flavor.acid') + ' (0%)';
+        document.getElementById('block-sweet').style.width = '33.3%';
+        document.getElementById('block-sweet').innerText = t('flavor.sweet') + ' (0%)';
+        document.getElementById('block-bitter').style.width = '33.3%';
+        document.getElementById('block-bitter').innerText = t('flavor.bitter') + ' (0%)';
+        document.getElementById('diag-card').className = "diag-card";
+        document.getElementById('diag-title').innerHTML = '⚙️ ' + t('diag.title');
+        document.getElementById('diag-text').innerHTML = t('diag.waiting_text');
+        initResultCharts();
+
+        // Run computation (no UI update)
+        runSimulation();
+
+        // Start animation
+        animFrameStep = 0;
+        animFrameId = requestAnimationFrame(tickAnimation);
+    }
+
+    function tickAnimation() {
+        const totalSteps = pDataArray.length;
+        const stepsPerFrame = 2;
+        const nextStep = Math.min(animFrameStep + stepsPerFrame, totalSteps);
+
+        for (let s = animFrameStep; s < nextStep; s++) {
+            if (s >= pDataArray.length) break;
+            // Update stats to current step
+            document.getElementById('stat-time').innerText = pDataArray[s].x.toFixed(1) + "s";
+            document.getElementById('stat-pressure').innerText = pDataArray[s].y.toFixed(1) + " bar";
+            document.getElementById('stat-flow').innerText = fDataArray[s].y.toFixed(1) + " g/s";
+            document.getElementById('stat-yield').innerText = yDataArray[s].y.toFixed(1) + " g";
+        }
+
+        animFrameStep = nextStep;
+
+        // Draw curves up to current frame
+        const pSlice = pDataArray.slice(0, animFrameStep);
+        const fSlice = fDataArray.slice(0, animFrameStep);
+        const currentTime = animFrameStep > 0 ? pDataArray[animFrameStep - 1].x : 0;
+        const pCtx = document.getElementById('resultPChart').getContext('2d');
+        const fCtx = document.getElementById('resultFChart').getContext('2d');
+        drawChart(pCtx, pSlice, t('chart.pressure_title'), "#e74c3c", 10, currentMaxTime, currentTime);
+        drawChart(fCtx, fSlice, t('chart.flow_title'), "#3498db", 5, currentMaxTime, currentTime);
+
+        if (animFrameStep < totalSteps) {
+            animFrameId = requestAnimationFrame(tickAnimation);
+        } else {
+            animFrameId = null;
+            // Animation complete — show flavor bars and diagnosis
+            const totalFlavor = globalFlavorAcid + globalFlavorSweet + globalFlavorBitter;
+            if (totalFlavor > 0) {
+                let aP = Math.round((globalFlavorAcid/totalFlavor)*100);
+                let sP = Math.round((globalFlavorSweet/totalFlavor)*100);
+                let bP = Math.round((globalFlavorBitter/totalFlavor)*100);
+                document.getElementById('block-acid').style.width = aP+'%';
+                document.getElementById('block-sweet').style.width = sP+'%';
+                document.getElementById('block-bitter').style.width = bP+'%';
+                document.getElementById('block-acid').innerText = t('flavor.acid')+' ('+aP+'%)';
+                document.getElementById('block-sweet').innerText = t('flavor.sweet')+' ('+sP+'%)';
+                document.getElementById('block-bitter').innerText = t('flavor.bitter')+' ('+bP+'%)';
+            }
+            renderDiagnosis();
+        }
     }
 
     function runSimulation() {
         globalChannelingTriggerTime = null;
+        globalFlavorAcid = 0; globalFlavorSweet = 0; globalFlavorBitter = 0;
         pDataArray = []; fDataArray = []; yDataArray = [];
 
         const device = selectedDevice;
@@ -1471,32 +1549,9 @@ function t(key) {
         }
 
         globalIsChanneling = channelingTriggered;
-        const maxP = pDataArray.length > 0 ? Math.max(...pDataArray.map(d=>d.y)) : 0;
-        const maxF = fDataArray.length > 0 ? Math.max(...fDataArray.map(d=>d.y)) : 0;
-        const finalY = yDataArray.length > 0 ? yDataArray[yDataArray.length-1].y : 0;
-
-        // Update stat displays
-        document.getElementById('stat-pressure').innerText = maxP.toFixed(1) + " bar";
-        document.getElementById('stat-flow').innerText = maxF.toFixed(1) + " g/s";
-        document.getElementById('stat-yield').innerText = finalY.toFixed(1) + " g";
-        document.getElementById('stat-time').innerText = currentMaxTime.toFixed(1) + "s";
-
-        // Flavor bars
-        const totalFlavor = totalAcid + totalSweet + totalBitter;
-        if (totalFlavor > 0) {
-            let aP = Math.round((totalAcid/totalFlavor)*100);
-            let sP = Math.round((totalSweet/totalFlavor)*100);
-            let bP = Math.round((totalBitter/totalFlavor)*100);
-            document.getElementById('block-acid').style.width = aP+'%';
-            document.getElementById('block-sweet').style.width = sP+'%';
-            document.getElementById('block-bitter').style.width = bP+'%';
-            document.getElementById('block-acid').innerText = t('flavor.acid')+' ('+aP+'%)';
-            document.getElementById('block-sweet').innerText = t('flavor.sweet')+' ('+sP+'%)';
-            document.getElementById('block-bitter').innerText = t('flavor.bitter')+' ('+bP+'%)';
-        }
-
-        // Draw result charts
-        drawResultCharts();
+        globalFlavorAcid = totalAcid;
+        globalFlavorSweet = totalSweet;
+        globalFlavorBitter = totalBitter;
     }
 
     // ============================================
@@ -1652,6 +1707,7 @@ function t(key) {
     // Restart
     // ============================================
     function restartAnalysis() {
+        if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
         pDataArray = []; fDataArray = []; yDataArray = [];
         resetDrawnData();
         document.getElementById('stat-pressure').innerText = "0.0 bar";
